@@ -1,0 +1,4 @@
+A Slack bot that automatically provides a link to JIRA issues written in channels.
+
+== Misc
+https://github.com/JetBrains/kotlin-web-site/blob/yole/styleguide/pages/docs/reference/coding-conventions.md[Kotlin coding conventions]
