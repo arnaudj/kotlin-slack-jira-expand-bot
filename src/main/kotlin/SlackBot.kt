@@ -28,8 +28,10 @@ fun main(args: Array<String>) {
 
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
     val proxy = cmdLine.getOptionValue("p")
-    val jiraURL = cmdLine.getOptionValue("j")
+    var jiraURL = cmdLine.getOptionValue("j")
     require(jiraURL?.toLowerCase()?.startsWith("http") ?: false, { "Missing/malformed Jira url. Exemple: http://localhost/jira/" })
+    if (jiraURL.endsWith("/"))
+        jiraURL = jiraURL.substring(0, jiraURL.length - 1)
 
     runBot(token, proxy, jiraURL)
 }
@@ -57,15 +59,19 @@ private fun runBot(token: String?, proxy: String?, jiraHostBaseUrl: String) {
             return@SlackMessagePostedListener // filter own messages, especially not to match own replies indefinitely
 
         val replies = jiraRefHandler.handleMessage(event.messageContent, event.channel.id, event.user.id)
-        replies.forEach { (action, channelId, message) ->
-            when (action) {
-                sendMessageReply.action -> {
-                    val channel = session.findChannelById(channelId)
-                    session.sendMessage(channel, message)
-                }
-            }
-        }
 
+        // Conflate results (0..N -> 1 message) to avoid flood / amplification
+        // LOW assuming same channel for all results
+        if (replies[0].action != sendMessageReply.action)
+            return@SlackMessagePostedListener
+
+        val conflatedMessages = replies
+                .filter { it.action == sendMessageReply.action }
+                .map { it.message }
+                .joinToString(prefix = "Issues: ", separator = " | ", limit = 15)
+
+        val channel = session.findChannelById(replies[0].channelId)
+        session.sendMessage(channel, conflatedMessages)
     })
 }
 
