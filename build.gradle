@@ -16,11 +16,12 @@ apply plugin: 'kotlin'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile 'com.ullink.slack:simpleslackapi:1.0.0'
+    compile 'com.github.Ullink:simple-slack-api:739cd2eba4'
     compile 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
     compile 'com.googlecode.json-simple:json-simple:1.1'
     compile 'org.slf4j:slf4j-simple:1.7.7'
