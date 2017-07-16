@@ -1,4 +1,21 @@
 A Slack bot that automatically provides a link to JIRA issues written in channels.
 
+
+
+== How to use
+First, create a new bot user on your Slack team, please read https://api.slack.com/bot-users[Slack bot users].
+You will obtain a bot access token that is needed below.
+
+Then run the bot:
+
+`kotlin-slack-jira-aliaser-bot.jar -j http://MY-JIRA-URL-HERE/ -t BOT_AUTH_TOKEN_HERE (-p proxyhostifany:port)`
+
+* Option -j will be used as base address when expanding links
+* Option -t specifies the bot authentication token (cf first step)
+* Option -p allow to specify an http(s) proxy, if needed
+
+
 == Misc
-https://github.com/JetBrains/kotlin-web-site/blob/yole/styleguide/pages/docs/reference/coding-conventions.md[Kotlin coding conventions]
+Slack access thanks to the https://github.com/Ullink/simple-slack-api[Simple Slack API].
+
+Check the https://github.com/JetBrains/kotlin-web-site/blob/yole/styleguide/pages/docs/reference/coding-conventions.md[Kotlin coding conventions]
