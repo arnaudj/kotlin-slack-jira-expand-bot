@@ -1,5 +1,5 @@
-import com.github.arnaudj.JiraLinkHandler
-import com.github.arnaudj.dtos.results.sendMessageReply
+package com.github.arnaudj.linkify.slackbot
+
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
 import org.apache.commons.cli.DefaultParser
@@ -51,27 +51,22 @@ private fun runBot(token: String?, proxy: String?, jiraHostBaseUrl: String) {
     session.connect()
     println("* Bot connected")
 
-    val jiraRefHandler = JiraLinkHandler(jiraHostBaseUrl)
+    val bot = BotFacade(jiraHostBaseUrl) { eventReady ->
+        val markup = BotFacade.eventToMarkup(eventReady)
+        val channel = session.findChannelById(eventReady.sourceId)
+        session.sendMessage(channel, markup)
+    }
+    bot.start()
+
     session.addMessagePostedListener(SlackMessagePostedListener { event, session ->
         //if (event.channelId.id != session.findChannelByName("thechannel").id) return // target per channelId
         //if (event.sender.id != session.findUserByUserName("gueststar").id) return // target per user
         if (session.sessionPersona().id == event.sender.id)
             return@SlackMessagePostedListener // filter own messages, especially not to match own replies indefinitely
 
-        val replies = jiraRefHandler.handleMessage(event.messageContent, event.channel.id, event.user.id)
-
-        // Conflate results (0..N -> 1 message) to avoid flood / amplification
-        // LOW assuming same channel for all results
-        if (replies[0].action != sendMessageReply.action)
-            return@SlackMessagePostedListener
-
-        val conflatedMessages = replies
-                .filter { it.action == sendMessageReply.action }
-                .map { it.message }
-                .joinToString(prefix = "Issues: ", separator = " | ", limit = 15)
-
-        val channel = session.findChannelById(replies[0].channelId)
-        session.sendMessage(channel, conflatedMessages)
+        with(event) {
+            bot.handleMessage(messageContent, channel.id, user.id)
+        }
     })
 }
 
