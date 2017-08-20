@@ -1,15 +1,19 @@
 package com.github.arnaudj.linkify.slackbot
 
+import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
 import java.net.Proxy
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
-// TODO Handle external configuration (jira host, token, watched jira project keys)
 // TODO Use Jira API to fetch issues information
-// TODO Extract options handling
+// TODO Use DI for options handling
+// TODO Handle external configuration (jira host, token, watched jira project keys)
 
 fun main(args: Array<String>) {
 
@@ -33,10 +37,18 @@ fun main(args: Array<String>) {
     if (jiraURL.endsWith("/"))
         jiraURL = jiraURL.substring(0, jiraURL.length - 1)
 
-    runBot(token, proxy, jiraURL)
+
+    val commandsExecutorService = Executors.newSingleThreadScheduledExecutor()
+    val eventsExecutorService = Executors.newSingleThreadScheduledExecutor()
+    val configMap = mapOf(
+            ConfigurationConstants.jiraHostBaseUrl to jiraURL
+    )
+    runBot(token, proxy, configMap, commandsExecutorService, eventsExecutorService)
 }
 
-private fun runBot(token: String?, proxy: String?, jiraHostBaseUrl: String) {
+private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
+                   commandsExecutorService: ScheduledExecutorService,
+                   eventsExecutorService: ScheduledExecutorService) {
     val session = SlackSessionFactory.getSlackSessionBuilder(token).apply {
         withAutoreconnectOnDisconnection(true)
 
@@ -51,14 +63,20 @@ private fun runBot(token: String?, proxy: String?, jiraHostBaseUrl: String) {
     session.connect()
     println("* Bot connected")
 
-    val bot = BotFacade(jiraHostBaseUrl) { eventReady ->
-        val markup = BotFacade.eventToMarkup(eventReady)
-        val channel = session.findChannelById(eventReady.sourceId)
-        session.sendMessage(channel, markup)
-    }
-    bot.start()
+    val bot = BotFacade(commandsExecutorService, configMap[ConfigurationConstants.jiraHostBaseUrl] as String)
 
-    session.addMessagePostedListener(SlackMessagePostedListener { event, session ->
+    eventsExecutorService.scheduleWithFixedDelay(
+            {
+                bot.handleEvents { eventReady ->
+                    val markup = BotFacade.eventToMarkup(eventReady, configMap)
+                    val channel = session.findChannelById(eventReady.sourceId)
+                    session.sendMessage(channel, markup)
+                }
+            },
+            0, 50, TimeUnit.MILLISECONDS
+    )
+
+    session.addMessagePostedListener(SlackMessagePostedListener { event, _ ->
         //if (event.channelId.id != session.findChannelByName("thechannel").id) return // target per channelId
         //if (event.sender.id != session.findUserByUserName("gueststar").id) return // target per user
         if (session.sessionPersona().id == event.sender.id)

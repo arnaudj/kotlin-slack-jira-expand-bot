@@ -1,37 +1,37 @@
+import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.slackbot.BotFacade
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 
 class JiraLinkHandlerTest {
-    val jiraHostBaseUrl1 = "http://localhost/test-jira"
     lateinit var bot: BotFacade
     val replies = mutableListOf<String>()
+    val singleExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    val jiraHostBaseUrl1 = "http://localhost/test-jira"
+    val configMap = mapOf(// TODO Use DI instead
+            ConfigurationConstants.jiraHostBaseUrl to jiraHostBaseUrl1
+    )
 
     @Before
     fun setup() {
-        bot = BotFacade(jiraHostBaseUrl1) { eventReady ->
-            val markup = BotFacade.eventToMarkup(eventReady)
-            replies.add(markup)
-        }
-        bot.start()
+        bot = BotFacade(singleExecutorService, jiraHostBaseUrl1)
     }
 
     @After
     fun tearDown(){
-        bot.stop()
+        singleExecutorService.shutdownNow()
     }
 
     fun receiveChatMessage(message: String, channel: String, user: String) {
         bot.handleMessage(message, channel, user)
-        Thread.sleep(500) // TODO RFT to allow test chain to be fully synchronous for testing
-    }
-
-    fun assertListEquals(a: List<String>, b: List<String>) {
-        println("a: $a")
-        println("b: $b")
-        Assert.assertArrayEquals(a.toTypedArray(), b.toTypedArray())
+        bot.handleEvents {
+            val markup = BotFacade.eventToMarkup(it, configMap)
+            replies.add(markup)
+        }
     }
 
     @Test fun `given no jira reference bot says nothing`() {
@@ -55,14 +55,15 @@ class JiraLinkHandlerTest {
 
     @Test fun `given 1 jira reference bot provides 1 jira link`() {
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
-        assertListEquals(replies, listOf("<$jiraHostBaseUrl1/JIRA-1234|JIRA-1234>"))
+        assertListEquals(listOf("<$jiraHostBaseUrl1/JIRA-1234|JIRA-1234>"), replies)
     }
 
     @Test fun `given 2 jira references bot provides 2 jira links`() {
         receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
-        assertListEquals(replies, listOf(
-                "<$jiraHostBaseUrl1/JIRA-1234|JIRA-1234>",
-                "<$jiraHostBaseUrl1/PROD-42|JPROD-42>"
-        ))
+        assertListEquals(listOf("<$jiraHostBaseUrl1/JIRA-1234|JIRA-1234>\n<$jiraHostBaseUrl1/PROD-42|PROD-42>"), replies)
+    }
+
+    fun assertListEquals(a: List<String>, b: List<String>) {
+        Assert.assertArrayEquals(a.toTypedArray(), b.toTypedArray())
     }
 }
