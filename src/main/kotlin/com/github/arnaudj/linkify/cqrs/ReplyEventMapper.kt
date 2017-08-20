@@ -1,4 +1,4 @@
-package com.github.arnaudj.linkify.slackbot.cqrs
+package com.github.arnaudj.linkify.cqrs
 
 
 interface ReplyEventMapper<in T, out O> {

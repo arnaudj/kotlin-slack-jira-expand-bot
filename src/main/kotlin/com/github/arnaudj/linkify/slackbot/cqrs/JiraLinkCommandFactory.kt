@@ -1,8 +1,8 @@
 package com.github.arnaudj.linkify.slackbot.cqrs
 
 import com.github.arnaudj.linkify.cqrs.commands.Command
-import com.github.arnaudj.linkify.cqrs.commands.ResolveJiraCommand
 import com.github.arnaudj.linkify.cqrs.commands.CommandFactory
+import com.github.arnaudj.linkify.slackbot.cqrs.commands.ResolveJiraCommand
 import java.util.regex.Pattern
 
 class JiraLinkCommandFactory(val jiraHostBaseUrl: String) : CommandFactory {

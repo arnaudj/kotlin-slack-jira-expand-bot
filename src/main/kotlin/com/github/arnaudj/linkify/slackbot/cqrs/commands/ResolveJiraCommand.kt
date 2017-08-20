@@ -1,8 +1,9 @@
-package com.github.arnaudj.linkify.cqrs.commands
+package com.github.arnaudj.linkify.slackbot.cqrs.commands
 
+import com.github.arnaudj.linkify.cqrs.commands.Command
 import com.github.arnaudj.linkify.cqrs.events.Event
-import com.github.arnaudj.linkify.cqrs.events.JiraResolved
-import com.github.arnaudj.linkify.cqrs.results.JiraEntity
+import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
+import com.github.arnaudj.linkify.slackbot.cqrs.results.JiraEntity
 
 
 class ResolveJiraCommand(val jiraIdentifiers: List<String>, val channelId: String, val userId: String, val jiraHostBaseUrl: String) : Command {

@@ -3,9 +3,9 @@ package com.github.arnaudj.linkify.slackbot
 import com.github.arnaudj.linkify.cqrs.DataStore
 import com.github.arnaudj.linkify.cqrs.commands.CommandDispatcher
 import com.github.arnaudj.linkify.cqrs.events.Event
-import com.github.arnaudj.linkify.cqrs.events.JiraResolved
 import com.github.arnaudj.linkify.slackbot.cqrs.JiraLinkCommandFactory
 import com.github.arnaudj.linkify.slackbot.cqrs.JiraResolvedEventMapper
+import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
