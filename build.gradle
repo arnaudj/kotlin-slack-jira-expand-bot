@@ -24,6 +24,7 @@ dependencies {
     compile 'com.github.Ullink:simple-slack-api:739cd2eba4'
     compile 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
     compile 'com.googlecode.json-simple:json-simple:1.1'
+    compile 'com.github.salomonbrys.kodein:kodein:4.1.0'
     compile 'org.slf4j:slf4j-simple:1.7.7'
     compile 'org.slf4j:slf4j-api:1.7.7'
     compile 'commons-cli:commons-cli:1.4'

@@ -1,19 +1,17 @@
 package com.github.arnaudj.linkify.slackbot.cqrs
 
-import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.cqrs.commands.Command
 import com.github.arnaudj.linkify.cqrs.commands.CommandFactory
 import com.github.arnaudj.linkify.slackbot.cqrs.commands.ResolveJiraCommand
+import com.github.salomonbrys.kodein.Kodein
 import java.util.regex.Pattern
 
-class JiraLinkCommandFactory(configMap: Map<String, Any>) : CommandFactory {
-    val jiraHostBaseUrl = configMap[ConfigurationConstants.jiraHostBaseUrl] as String
-    val resolveViaAPI = configMap[ConfigurationConstants.jiraResolveWithAPI] as Boolean
+class JiraLinkCommandFactory(val kodein: Kodein) : CommandFactory {
     val pattern: Pattern = Pattern.compile("([A-Za-z]{4,7}-\\d{1,5})+")
 
     override fun createFrom(message: String, channelId: String, userId: String): List<Command> {
         val command = extractJiraIssueReferences(message) ?: return emptyList()
-        return listOf(ResolveJiraCommand(command, channelId, userId, jiraHostBaseUrl, resolveViaAPI))
+        return listOf(ResolveJiraCommand(command, channelId, userId, kodein))
     }
 
     private fun extractJiraIssueReferences(message: String): List<String>? {

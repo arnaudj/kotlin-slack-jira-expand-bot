@@ -6,11 +6,13 @@ import com.github.arnaudj.linkify.cqrs.events.Event
 import com.github.arnaudj.linkify.slackbot.cqrs.JiraLinkCommandFactory
 import com.github.arnaudj.linkify.slackbot.cqrs.JiraResolvedEventMapper
 import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
+import com.github.salomonbrys.kodein.Kodein
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-class BotFacade(val executorService: ExecutorService, configMap: Map<String, Any>) {
-    val dispatcher = CommandDispatcher(JiraLinkCommandFactory(configMap))
+class BotFacade(val executorService: ExecutorService, kodein: Kodein) {
+
+    val dispatcher = CommandDispatcher(JiraLinkCommandFactory(kodein))
     val eventStore = DataStore<Event>()
 
     fun handleMessage(message: String, channelId: String, userId: String) {

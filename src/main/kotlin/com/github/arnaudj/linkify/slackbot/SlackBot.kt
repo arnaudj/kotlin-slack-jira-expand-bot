@@ -1,6 +1,11 @@
 package com.github.arnaudj.linkify.slackbot
 
 import com.github.arnaudj.linkify.config.ConfigurationConstants
+import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
+import com.github.arnaudj.linkify.spi.jira.JiraResolutionServiceImpl
+import com.github.salomonbrys.kodein.Kodein
+import com.github.salomonbrys.kodein.bind
+import com.github.salomonbrys.kodein.instance
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
 import org.apache.commons.cli.DefaultParser
@@ -11,8 +16,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-// TODO Use Jira API to fetch issues information
-// TODO Use DI for options handling
+// TODO Use Jira API to fetch issues information (JiraResolutionServiceImpl)
+// TODO Use injector to fetch configuration (all)
 // TODO Handle external configuration (jira host, token, watched jira project keys)
 
 fun main(args: Array<String>) {
@@ -65,7 +70,10 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
     session.connect()
     println("* Bot connected")
 
-    val bot = BotFacade(commandsExecutorService, configMap)
+    val jiraResolutionService:JiraResolutionService = JiraResolutionServiceImpl(configMap)
+    val bot = BotFacade(commandsExecutorService, Kodein {
+        bind() from instance(jiraResolutionService)
+    })
 
     eventsExecutorService.scheduleWithFixedDelay(
             {

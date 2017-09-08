@@ -1,5 +1,10 @@
 import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.slackbot.BotFacade
+import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
+import com.github.arnaudj.linkify.spi.jira.JiraResolutionServiceImpl
+import com.github.salomonbrys.kodein.Kodein
+import com.github.salomonbrys.kodein.bind
+import com.github.salomonbrys.kodein.instance
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -12,14 +17,17 @@ class JiraLinkHandlerTest {
     val replies = mutableListOf<String>()
     val singleExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     val jiraHostBaseUrl1 = "http://localhost/test-jira"
-    val configMap = mapOf(// TODO Use DI instead
+    val configMap = mapOf(
             ConfigurationConstants.jiraHostBaseUrl to jiraHostBaseUrl1,
             ConfigurationConstants.jiraResolveWithAPI to true
     )
+    val jiraResolutionService: JiraResolutionService = JiraResolutionServiceImpl(configMap)
 
     @Before
     fun setup() {
-        bot = BotFacade(singleExecutorService, configMap)
+        bot = BotFacade(singleExecutorService, Kodein {
+            bind() from instance(jiraResolutionService)
+        })
     }
 
     @After
