@@ -9,8 +9,8 @@ import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-class BotFacade(val executorService: ExecutorService, jiraHostBaseUrl: String) {
-    val dispatcher = CommandDispatcher(JiraLinkCommandFactory(jiraHostBaseUrl))
+class BotFacade(val executorService: ExecutorService, configMap: Map<String, Any>) {
+    val dispatcher = CommandDispatcher(JiraLinkCommandFactory(configMap))
     val eventStore = DataStore<Event>()
 
     fun handleMessage(message: String, channelId: String, userId: String) {
@@ -24,14 +24,10 @@ class BotFacade(val executorService: ExecutorService, jiraHostBaseUrl: String) {
     }
 
     fun handleEvents(action: (Event) -> Unit) {
-        var keep: Boolean
-        do {
-            keep = false
-            eventStore.store.poll(50, TimeUnit.MILLISECONDS)?.let {
-                action.invoke(it)
-                keep = true
-            }
-        } while (keep)
+        tilEmpty@ while (true) {
+            val event = eventStore.store.poll(50, TimeUnit.MILLISECONDS) ?: break@tilEmpty
+            action.invoke(event)
+        }
     }
 
     companion object BotFacade {

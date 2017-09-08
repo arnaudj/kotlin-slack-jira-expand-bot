@@ -21,6 +21,7 @@ fun main(args: Array<String>) {
     options.addOption("t", true, "set bot auth token")
     options.addOption("p", true, "http proxy with format host:port")
     options.addOption("j", true, "jira http address")
+    options.addOption("u", true, "use jira rest api to resolve issues information")
     options.addOption("h", false, "help")
 
     val cmdLine = DefaultParser().parse(options, args)
@@ -41,7 +42,8 @@ fun main(args: Array<String>) {
     val commandsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val eventsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val configMap = mapOf(
-            ConfigurationConstants.jiraHostBaseUrl to jiraURL
+            ConfigurationConstants.jiraHostBaseUrl to jiraURL,
+            ConfigurationConstants.jiraResolveWithAPI to cmdLine.hasOption("u")
     )
     runBot(token, proxy, configMap, commandsExecutorService, eventsExecutorService)
 }
@@ -63,7 +65,7 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
     session.connect()
     println("* Bot connected")
 
-    val bot = BotFacade(commandsExecutorService, configMap[ConfigurationConstants.jiraHostBaseUrl] as String)
+    val bot = BotFacade(commandsExecutorService, configMap)
 
     eventsExecutorService.scheduleWithFixedDelay(
             {

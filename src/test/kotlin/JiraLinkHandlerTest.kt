@@ -13,12 +13,13 @@ class JiraLinkHandlerTest {
     val singleExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     val jiraHostBaseUrl1 = "http://localhost/test-jira"
     val configMap = mapOf(// TODO Use DI instead
-            ConfigurationConstants.jiraHostBaseUrl to jiraHostBaseUrl1
+            ConfigurationConstants.jiraHostBaseUrl to jiraHostBaseUrl1,
+            ConfigurationConstants.jiraResolveWithAPI to true
     )
 
     @Before
     fun setup() {
-        bot = BotFacade(singleExecutorService, jiraHostBaseUrl1)
+        bot = BotFacade(singleExecutorService, configMap)
     }
 
     @After
