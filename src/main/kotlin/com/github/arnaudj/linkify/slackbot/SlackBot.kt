@@ -1,11 +1,7 @@
 package com.github.arnaudj.linkify.slackbot
 
 import com.github.arnaudj.linkify.config.ConfigurationConstants
-import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
-import com.github.arnaudj.linkify.spi.jira.JiraResolutionServiceImpl
 import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.bind
-import com.github.salomonbrys.kodein.instance
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
 import org.apache.commons.cli.DefaultParser
@@ -70,10 +66,10 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
     session.connect()
     println("* Bot connected")
 
-    val jiraResolutionService:JiraResolutionService = JiraResolutionServiceImpl(configMap)
-    val bot = BotFacade(commandsExecutorService, Kodein {
-        bind() from instance(jiraResolutionService)
-    })
+    val kodein = Kodein {
+        import(SlackbotModule.getInjectionBindings(configMap))
+    }
+    val bot = BotFacade(commandsExecutorService, kodein)
 
     eventsExecutorService.scheduleWithFixedDelay(
             {

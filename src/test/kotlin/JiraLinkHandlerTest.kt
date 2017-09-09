@@ -1,10 +1,11 @@
 import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
-import com.github.arnaudj.linkify.spi.jira.JiraResolutionServiceImpl
+import com.github.arnaudj.linkify.slackbot.SlackbotModule
+import com.github.arnaudj.linkify.spi.jira.JiraEntity
+import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.bind
-import com.github.salomonbrys.kodein.instance
+import com.github.salomonbrys.kodein.singleton
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -21,13 +22,20 @@ class JiraLinkHandlerTest {
             ConfigurationConstants.jiraHostBaseUrl to jiraHostBaseUrl1,
             ConfigurationConstants.jiraResolveWithAPI to true
     )
-    val jiraResolutionService: JiraResolutionService = JiraResolutionServiceImpl(configMap)
+
+    class DummyJira7RestClientImpl : JiraRestClient { // For Jira 7.2.x
+        override fun resolve(jiraId: String): JiraEntity {
+            TODO("DummyJira7RestClientImpl not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+    }
 
     @Before
     fun setup() {
-        bot = BotFacade(singleExecutorService, Kodein {
-            bind() from instance(jiraResolutionService)
-        })
+        val kodein = Kodein {
+            import(SlackbotModule.getInjectionBindings(configMap))
+            bind<JiraRestClient>(overrides = true) with singleton { DummyJira7RestClientImpl() }
+        }
+        bot = BotFacade(singleExecutorService, kodein)
     }
 
     @After
