@@ -4,6 +4,7 @@ import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
+import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
@@ -12,8 +13,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-// TODO Use Jira API to fetch issues information (JiraResolutionServiceImpl)
-// TODO Use injector to fetch configuration (all)
+// TODO Jira7RestClientImpl#resolve: Feed jira user credentials from command line / config
+// TODO JiraResolvedEventMapper: Include more information (criticity, author name & avatar (fields.reporter.avatarUrls))
+// TODO Use injector to fetch configuration per token
 // TODO Handle external configuration (jira host, token, watched jira project keys)
 
 fun main(args: Array<String>) {
@@ -21,8 +23,9 @@ fun main(args: Array<String>) {
     val options = Options()
     options.addOption("t", true, "set bot auth token")
     options.addOption("p", true, "http proxy with format host:port")
-    options.addOption("j", true, "jira http address")
-    options.addOption("u", true, "use jira rest api to resolve issues information")
+    options.addOption("jia", true, "jira http base address for issues browsing (ex: http://jira.nodomain/browse)")
+    options.addOption("jrs", true, "jira http base address for rest service (ex: http://jira.nodomain, without '/rest/api/latest/')")
+    options.addOption("u", false, "use jira rest api to resolve issues information")
     options.addOption("h", false, "help")
 
     val cmdLine = DefaultParser().parse(options, args)
@@ -34,19 +37,33 @@ fun main(args: Array<String>) {
 
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
     val proxy = cmdLine.getOptionValue("p")
-    var jiraURL = cmdLine.getOptionValue("j")
-    require(jiraURL?.toLowerCase()?.startsWith("http") ?: false, { "Missing/malformed Jira url. Exemple: http://localhost/jira/" })
-    if (jiraURL.endsWith("/"))
-        jiraURL = jiraURL.substring(0, jiraURL.length - 1)
-
 
     val commandsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val eventsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val configMap = mapOf(
-            ConfigurationConstants.jiraHostBaseUrl to jiraURL,
+            ConfigurationConstants.jiraBrowseIssueBaseUrl to validateOptionUrl(cmdLine, "jia"),
+            ConfigurationConstants.jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs"),
             ConfigurationConstants.jiraResolveWithAPI to cmdLine.hasOption("u")
     )
     runBot(token, proxy, configMap, commandsExecutorService, eventsExecutorService)
+}
+
+private fun validateOptionUrl(cmdLine: CommandLine, option: String): String {
+    requireOption(cmdLine, option)
+    return validateUrl(cmdLine.getOptionValue(option))
+}
+
+private fun validateUrl(url: String?): String {
+    require(url?.toLowerCase()?.startsWith("http") ?: false, { "Missing/malformed url. Exemple: http://localhost/" })
+    //require(url?.toLowerCase()?.startsWith("http"), { "Missing/malformed url. Exemple: http://localhost/" })
+    return if (url!!.endsWith("/"))
+        url.substring(0, url.length - 1)
+    else
+        url
+}
+
+private fun requireOption(cmdLine: CommandLine, option: String) {
+    require(cmdLine.hasOption(option), { "Missing mandatory option: $option" })
 }
 
 private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
@@ -62,6 +79,8 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
             withProxy(Proxy.Type.HTTP, elmt[0], elmt[1].toInt())
         }
     }.build()
+
+    println("* Using bot configuration: $configMap")
 
     session.connect()
     println("* Bot connected")

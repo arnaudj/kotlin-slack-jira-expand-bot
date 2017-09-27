@@ -1,10 +1,90 @@
 package com.github.arnaudj.linkify.spi.jira.restclient
 
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import okhttp3.*
 
+// For Jira 7.2.x - https://docs.atlassian.com/jira/REST/7.2.3/
+open class Jira7RestClientImpl : JiraRestClient {
 
-class Jira7RestClientImpl : JiraRestClient { // For Jira 7.2.x
-    override fun resolve(jiraId: String): JiraEntity {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    open fun createClientBuilder(): okhttp3.OkHttpClient.Builder {
+        return OkHttpClient.Builder()
     }
+
+    override fun resolve(restBaseUrl: String, jiraIssueBrowseURL: String, jiraId: String): JiraEntity {
+        try {
+            val username = "" // FIXME extract
+            val password = ""
+            val url: String? = "$restBaseUrl/rest/api/latest/issue/$jiraId"
+            val request = Request.Builder()
+                    .url(url)
+                    .addHeader("Content-Type", MediaType.parse("application/json; charset=utf-8").toString())
+                    .addHeader("User-Agent", "${this.javaClass.simpleName}/1")
+                    .addHeader("Authorization", Credentials.basic(username, password))
+                    .get().build()
+
+            val client = createClientBuilder().build()
+            println("> [jira client] Request: ${request}")
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful)
+                    return JiraEntity(jiraId, jiraIssueBrowseURL, "Http call unsuccessful: ${response.code()}: ${response.message()}")
+
+                val payload = response.body()?.string() ?: ""
+                println("< [jira client] Reply: ###$payload###")
+
+                if (payload.isEmpty())
+                    return JiraEntity(jiraId, jiraIssueBrowseURL, "Empty reply")
+
+                return decodeEntity(payload, jiraIssueBrowseURL)
+            }
+
+        }
+        catch (t:Throwable){
+            return JiraEntity(jiraId, jiraIssueBrowseURL, t.message ?: "Exception")
+        }
+    }
+
+    fun decodeEntity(payload: String, jiraIssueBrowseURL: String): JiraEntity {
+        // https://docs.atlassian.com/jira/REST/7.2.3/#api/2/issue-getIssue
+        // Jira markdown to slack markdown: https://github.com/shaunburdick/jira2slack/blob/master/index.js
+        val json = JsonParser().parse(payload).asJsonObject
+
+        //val description = getStringOptional(json, "description", "")
+        val summary = getStringOptional(json, "summary", "")
+        val key = getStringOptional(json, "key", "")
+
+        val fieldsMap = mutableMapOf<String, Any>()
+        if (json.has("fields")) {
+            val fields = json.getAsJsonObject("fields")
+            fieldsMap["summary"] = getStringOptional(fields, "summary", "")
+
+            fieldsMap["created"] = getStringOptional(fields, "created", "")
+            fieldsMap["updated"] = getStringOptional(fields, "updated", "")
+
+            if (fields.has("status"))
+                fieldsMap["status.name"] = getStringOptional(fields.getAsJsonObject("status"), "name", "")
+
+            if (fields.has("priority"))
+                fieldsMap["priority.name"] = getStringOptional(fields.getAsJsonObject("priority"), "name", "")
+
+            if (fields.has("reporter"))
+                fieldsMap["reporter.name"] = getStringOptional(fields.getAsJsonObject("reporter"), "name", "")
+
+            if (fields.has("assignee"))
+                fieldsMap["assignee.name"] = getStringOptional(fields.getAsJsonObject("assignee"), "name", "")
+        }
+
+        return JiraEntity(key, jiraIssueBrowseURL, summary, fieldsMap)
+    }
+
+    private fun getStringOptional(json: JsonObject, name: String, defaultValue: String): String {
+        return try {
+            if (json.has(name)) json.get(name).asString else defaultValue
+        } catch (e: Throwable) {
+            "Error while parsing"
+        }
+    }
+
 }

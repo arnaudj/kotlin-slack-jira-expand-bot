@@ -11,8 +11,10 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
-
+apply plugin: 'java'
 apply plugin: 'kotlin'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -28,5 +30,10 @@ dependencies {
     compile 'org.slf4j:slf4j-simple:1.7.7'
     compile 'org.slf4j:slf4j-api:1.7.7'
     compile 'commons-cli:commons-cli:1.4'
+    // Jira client
+    compile 'com.squareup.okhttp3:okhttp:3.8.1'
+    compile 'com.google.code.gson:gson:2.8.1'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
     testCompile 'junit:junit:4.12'
 }

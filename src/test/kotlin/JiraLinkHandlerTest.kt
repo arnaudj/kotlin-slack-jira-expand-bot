@@ -1,47 +1,10 @@
-import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.github.arnaudj.linkify.slackbot.SlackbotModule
-import com.github.arnaudj.linkify.spi.jira.JiraEntity
-import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
-import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.bind
-import com.github.salomonbrys.kodein.singleton
-import org.junit.After
 import org.junit.Assert
-import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 
-class JiraLinkHandlerTest {
-    lateinit var bot: BotFacade
+
+class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
     val replies = mutableListOf<String>()
-    val singleExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
-    val jiraHostBaseUrl1 = "http://localhost/test-jira"
-    val configMap = mapOf(
-            ConfigurationConstants.jiraHostBaseUrl to jiraHostBaseUrl1,
-            ConfigurationConstants.jiraResolveWithAPI to true
-    )
-
-    class DummyJira7RestClientImpl : JiraRestClient { // For Jira 7.2.x
-        override fun resolve(jiraId: String): JiraEntity {
-            TODO("DummyJira7RestClientImpl not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
-    }
-
-    @Before
-    fun setup() {
-        val kodein = Kodein {
-            import(SlackbotModule.getInjectionBindings(configMap))
-            bind<JiraRestClient>(overrides = true) with singleton { DummyJira7RestClientImpl() }
-        }
-        bot = BotFacade(singleExecutorService, kodein)
-    }
-
-    @After
-    fun tearDown(){
-        singleExecutorService.shutdownNow()
-    }
 
     fun receiveChatMessage(message: String, channel: String, user: String) {
         bot.handleMessage(message, channel, user)
@@ -51,12 +14,33 @@ class JiraLinkHandlerTest {
         }
     }
 
-    @Test fun `given no jira reference bot says nothing`() {
+    @Test
+    fun `(with jira API) given no jira reference bot says nothing`() {
+        setupObjects(true)
         receiveChatMessage("A normal conversation message", "chan1", "user1")
         Assert.assertTrue(replies.isEmpty())
     }
 
-    @Test fun `given malformed jira reference bot says nothing`() {
+    @Test
+    fun `(no jira API) given no jira reference bot says nothing`() {
+        setupObjects(false)
+        receiveChatMessage("A normal conversation message", "chan1", "user1")
+        Assert.assertTrue(replies.isEmpty())
+    }
+
+    @Test
+    fun `(with jira API) given malformed jira reference bot says nothing`() {
+        setupObjects(true)
+        `given malformed jira reference bot says nothing`()
+    }
+
+    @Test
+    fun `(no jira API) given malformed jira reference bot says nothing`() {
+        setupObjects(false)
+        `given malformed jira reference bot says nothing`()
+    }
+
+    private fun `given malformed jira reference bot says nothing`() {
         receiveChatMessage("DEC-2050", "chan1", "user1")
         Assert.assertTrue(replies.isEmpty())
 
@@ -70,14 +54,32 @@ class JiraLinkHandlerTest {
         Assert.assertTrue(replies.isEmpty())
     }
 
-    @Test fun `given 1 jira reference bot provides 1 jira link`() {
+    @Test
+    fun `(with jira API) given 1 jira reference bot provides 1 jira link`() {
+        setupObjects(true)
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
-        assertListEquals(listOf("<$jiraHostBaseUrl1/JIRA-1234|JIRA-1234>"), replies)
+        assertListEquals(listOf("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`"), replies)
     }
 
-    @Test fun `given 2 jira references bot provides 2 jira links`() {
+    @Test
+    fun `(no jira API) given 1 jira reference bot provides 1 jira link`() {
+        setupObjects(false)
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
+        assertListEquals(listOf("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>"), replies)
+    }
+
+    @Test
+    fun `(with jira API) given 2 jira references bot provides 2 jira links`() {
+        setupObjects(true)
         receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
-        assertListEquals(listOf("<$jiraHostBaseUrl1/JIRA-1234|JIRA-1234>\n<$jiraHostBaseUrl1/PROD-42|PROD-42>"), replies)
+        assertListEquals(listOf("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`\n<$jiraBrowseIssueBaseUrl/PROD-42|PROD-42> `Another summary here available in fields`"), replies)
+    }
+
+    @Test
+    fun `(no jira API) given 2 jira references bot provides 2 jira links`() {
+        setupObjects(false)
+        receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
+        assertListEquals(listOf("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>\n<$jiraBrowseIssueBaseUrl/PROD-42|PROD-42>"), replies)
     }
 
     fun assertListEquals(a: List<String>, b: List<String>) {

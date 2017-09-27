@@ -1,0 +1,53 @@
+{
+  "self": "http://jira/rest/api/latest/issue/123",
+  "id": "1007",
+  "summary": "A subtask with some summary here",
+  "key": "JIRA-1234",
+  "description": "Some description here",
+  "issuetype": {
+    "self": "http://jira/rest/api/2/issuetype/9",
+    "id": "9",
+    "description": "Sub-part of a more global issue",
+    "iconUrl": "http://jira/secure/viewavatar?size=xsmall&avatarId=21518&avatarType=issuetype",
+    "name": "Task",
+    "subtask": true,
+    "avatarId": 21518
+  },
+  "priority": {
+    "self": "http://jira/rest/api/2/priority/4",
+    "iconUrl": "http://jira/images/icons/priorities/minor.svg",
+    "name": "Minor",
+    "id": "4"
+  },
+  "status": {
+    "self": "http://jira/rest/api/2/status/1",
+    "description": "The issue is open and ready for the assignee to qualify it",
+    "iconUrl": "http://jira/images/icons/statuses/open.png",
+    "name": "Open issue",
+    "id": "1",
+    "statusCategory": {
+      "self": "http://jira/rest/api/2/statuscategory/2",
+      "id": 2,
+      "key": "new",
+      "colorName": "blue-gray",
+      "name": "To Do"
+    }
+  },
+  "fields": {
+    "summary": "Some summary here",
+    "created": "2017-03-17T15:37:10.000+0100",
+    "updated": "2017-07-17T10:42:55.000+0200",
+    "status": {
+      "name": "Closed"
+    },
+    "priority": {
+      "name": "Minor"
+    },
+    "reporter": {
+      "name": "jdoe"
+    },
+    "assignee": {
+      "name": "noone"
+    }
+  }
+}
