@@ -1,0 +1,2 @@
+Next:
+	JiraResolvedEventMapper: Include more information (criticity, author name & avatar (fields.reporter.avatarUrls))

@@ -13,7 +13,7 @@ class SlackbotModule {
     companion object SlackbotModule {
         fun getInjectionBindings(configMap: Map<String, Any>): Kodein.Module {
             return Kodein.Module {
-                bind<JiraRestClient>() with singleton { Jira7RestClientImpl() }
+                bind<JiraRestClient>() with singleton { Jira7RestClientImpl(configMap) }
                 bind<JiraResolutionService>() with singleton { JiraResolutionServiceImpl(configMap, instance()) }
             }
         }

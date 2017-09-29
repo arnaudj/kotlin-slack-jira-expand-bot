@@ -6,7 +6,7 @@ import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 class JiraResolutionServiceImpl(configMap: Map<String, Any>, val restClient: JiraRestClient) : JiraResolutionService {
     val jiraIssueBrowseURL = configMap[ConfigurationConstants.jiraBrowseIssueBaseUrl] as String
     val jiraRestServiceBaseUrl = configMap[ConfigurationConstants.jiraRestServiceBaseUrl] as String
-    val resolveViaAPI = configMap[ConfigurationConstants.jiraResolveWithAPI] as Boolean
+    val resolveViaAPI = !(configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String).isEmpty()
 
     override fun resolve(jiraId: String): JiraEntity {
         val entity = if (resolveViaAPI)

@@ -1,6 +1,9 @@
 package com.github.arnaudj.linkify.slackbot
 
-import com.github.arnaudj.linkify.config.ConfigurationConstants
+import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraBrowseIssueBaseUrl
+import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthPassword
+import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
+import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
 import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
@@ -13,7 +16,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-// TODO Jira7RestClientImpl#resolve: Feed jira user credentials from command line / config
 // TODO JiraResolvedEventMapper: Include more information (criticity, author name & avatar (fields.reporter.avatarUrls))
 // TODO Use injector to fetch configuration per token
 // TODO Handle external configuration (jira host, token, watched jira project keys)
@@ -25,7 +27,7 @@ fun main(args: Array<String>) {
     options.addOption("p", true, "http proxy with format host:port")
     options.addOption("jia", true, "jira http base address for issues browsing (ex: http://jira.nodomain/browse)")
     options.addOption("jrs", true, "jira http base address for rest service (ex: http://jira.nodomain, without '/rest/api/latest/')")
-    options.addOption("u", false, "use jira rest api to resolve issues information")
+    options.addOption("u", true, "jira credentials to resolve issues information, with format user:password")
     options.addOption("h", false, "help")
 
     val cmdLine = DefaultParser().parse(options, args)
@@ -40,12 +42,24 @@ fun main(args: Array<String>) {
 
     val commandsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val eventsExecutorService = Executors.newSingleThreadScheduledExecutor()
+    val (jiraUser, jiraPassword) = extractJiraCredentials(cmdLine)
     val configMap = mapOf(
-            ConfigurationConstants.jiraBrowseIssueBaseUrl to validateOptionUrl(cmdLine, "jia"),
-            ConfigurationConstants.jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs"),
-            ConfigurationConstants.jiraResolveWithAPI to cmdLine.hasOption("u")
+            jiraBrowseIssueBaseUrl to validateOptionUrl(cmdLine, "jia"),
+            jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs"),
+            jiraRestServiceAuthUser to jiraUser,
+            jiraRestServiceAuthPassword to jiraPassword
     )
     runBot(token, proxy, configMap, commandsExecutorService, eventsExecutorService)
+}
+
+private fun extractJiraCredentials(cmdLine: CommandLine): List<String> {
+    cmdLine.getOptionValue("u")?.let {
+        it.split(delimiters = ":", limit = 2).let {
+            if (it.size == 2)
+                return it
+        }
+    }
+    return listOf("", "")
 }
 
 private fun validateOptionUrl(cmdLine: CommandLine, option: String): String {
@@ -80,7 +94,7 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
         }
     }.build()
 
-    println("* Using bot configuration: $configMap")
+    println("* Using bot configuration: ${configMap.toList().filter { it.first != jiraRestServiceAuthPassword }.toMap()}")
 
     session.connect()
     println("* Bot connected")

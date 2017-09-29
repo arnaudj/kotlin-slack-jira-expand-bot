@@ -1,31 +1,34 @@
 package com.github.arnaudj.linkify.spi.jira.restclient
 
+import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import okhttp3.*
 
 // For Jira 7.2.x - https://docs.atlassian.com/jira/REST/7.2.3/
-open class Jira7RestClientImpl : JiraRestClient {
+open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
+
+    val jiraAuthUser = configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String
+    val jiraAuthPwd = configMap[ConfigurationConstants.jiraRestServiceAuthPassword] as String
 
     open fun createClientBuilder(): okhttp3.OkHttpClient.Builder {
         return OkHttpClient.Builder()
     }
 
     override fun resolve(restBaseUrl: String, jiraIssueBrowseURL: String, jiraId: String): JiraEntity {
+        require(!jiraAuthUser.isNullOrEmpty())
         try {
-            val username = "" // FIXME extract
-            val password = ""
             val url: String? = "$restBaseUrl/rest/api/latest/issue/$jiraId"
             val request = Request.Builder()
                     .url(url)
                     .addHeader("Content-Type", MediaType.parse("application/json; charset=utf-8").toString())
                     .addHeader("User-Agent", "${this.javaClass.simpleName}/1")
-                    .addHeader("Authorization", Credentials.basic(username, password))
+                    .addHeader("Authorization", Credentials.basic(jiraAuthUser, jiraAuthPwd))
                     .get().build()
 
             val client = createClientBuilder().build()
-            println("> [jira client] Request: ${request}")
+            println("> [jira client] Request: $request")
 
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful)
@@ -51,7 +54,6 @@ open class Jira7RestClientImpl : JiraRestClient {
         // Jira markdown to slack markdown: https://github.com/shaunburdick/jira2slack/blob/master/index.js
         val json = JsonParser().parse(payload).asJsonObject
 
-        //val description = getStringOptional(json, "description", "")
         val summary = getStringOptional(json, "summary", "")
         val key = getStringOptional(json, "key", "")
 

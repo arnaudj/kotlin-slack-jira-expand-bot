@@ -19,14 +19,14 @@ class Jira7RestClientImplTest : JiraWithInterceptorTestBase() {
     }
 
     @Test
-    fun `Test JiraRestClient  reply unmarshalling`() {
-        val uut = Jira7RestClientImpl()
-        val e = uut.decodeEntity("JIRA-1234.mock.json".loadFromResources(), jiraBrowseIssueBaseUrl)
+    fun `Test JiraRestClient reply unmarshalling`() {
+        setupObjects(true)
+        val entity = Jira7RestClientImpl(configMap).decodeEntity("JIRA-1234.mock.json".loadFromResources(), jiraBrowseIssueBaseUrl)
         Assert.assertEquals(
                 "JiraEntity(key=JIRA-1234, jiraIssueBrowseURL=http://localhost/browse, summary=A subtask with some summary here, " +
                         "fieldsMap={summary=Some summary here, created=2017-03-17T15:37:10.000+0100, updated=2017-07-17T10:42:55.000+0200, " +
                         "status.name=Closed, priority.name=Minor, reporter.name=jdoe, assignee.name=noone})",
-                e.toString()
+                entity.toString()
         )
     }
 

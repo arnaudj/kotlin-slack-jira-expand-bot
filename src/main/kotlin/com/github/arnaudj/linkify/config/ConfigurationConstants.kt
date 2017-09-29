@@ -3,5 +3,6 @@ package com.github.arnaudj.linkify.config
 object ConfigurationConstants {
     val jiraBrowseIssueBaseUrl: String = "jira.issue.browse.base.url"
     val jiraRestServiceBaseUrl: String = "jira.rest.service.base.url"
-    val jiraResolveWithAPI: String = "jira.resolve.api"
+    val jiraRestServiceAuthUser: String = "jira.rest.service.auth.user"
+    val jiraRestServiceAuthPassword: String = "jira.rest.service.auth.password"
 }

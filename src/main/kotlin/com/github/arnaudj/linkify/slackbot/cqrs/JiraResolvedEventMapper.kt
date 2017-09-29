@@ -21,7 +21,6 @@ class JiraResolvedEventMapper : ReplyEventMapper<JiraResolved, String> {
         val backtickWrapper = { s: String -> if (s.isNotEmpty()) " `$s`" else "" }
         val rootTitle = backtickWrapper(e.summary)
         val nestedTitle: String? = backtickWrapper((e.fieldsMap["summary"] as? String) ?: "")
-        val title = if (rootTitle.isNotEmpty()) rootTitle else nestedTitle
-        return title
+        return if (rootTitle.isNotEmpty()) rootTitle else nestedTitle
     }
 }
