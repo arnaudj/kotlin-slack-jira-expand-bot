@@ -1,0 +1,3 @@
+Next:
+	Jira7RestClientImpl#resolve: Feed jira user credentials from configuration
+	JiraResolvedEventMapper: Include more information (criticity, author name & avatar (fields.reporter.avatarUrls))

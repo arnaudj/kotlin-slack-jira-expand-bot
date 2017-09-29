@@ -51,7 +51,6 @@ open class Jira7RestClientImpl : JiraRestClient {
         // Jira markdown to slack markdown: https://github.com/shaunburdick/jira2slack/blob/master/index.js
         val json = JsonParser().parse(payload).asJsonObject
 
-        //val description = getStringOptional(json, "description", "")
         val summary = getStringOptional(json, "summary", "")
         val key = getStringOptional(json, "key", "")
 
