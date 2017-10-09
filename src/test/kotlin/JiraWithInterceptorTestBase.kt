@@ -49,13 +49,7 @@ open class JiraWithInterceptorTestBase {
     }
 
     fun setupObjects(jiraResolveWithAPI: Boolean) {
-        configMap = mapOf(
-                ConfigurationConstants.jiraBrowseIssueBaseUrl to jiraBrowseIssueBaseUrl,
-                ConfigurationConstants.jiraRestServiceBaseUrl to jiraRestServiceBaseUrl,
-                ConfigurationConstants.jiraRestServiceAuthUser to if (jiraResolveWithAPI) jiraAuthUser else "",
-                ConfigurationConstants.jiraRestServiceAuthPassword to if (jiraResolveWithAPI) jiraAuthPwd else ""
-        )
-
+        setupConfigMap(jiraResolveWithAPI)
         kodein = Kodein {
             import(SlackbotModule.getInjectionBindings(configMap))
             if (jiraResolveWithAPI)
@@ -64,5 +58,14 @@ open class JiraWithInterceptorTestBase {
 
         val currentThreadExecutor = Executor { it.run() }
         bot = BotFacade(currentThreadExecutor, kodein)
+    }
+
+    fun setupConfigMap(jiraResolveWithAPI: Boolean) {
+        configMap = mapOf(
+                ConfigurationConstants.jiraBrowseIssueBaseUrl to jiraBrowseIssueBaseUrl,
+                ConfigurationConstants.jiraRestServiceBaseUrl to jiraRestServiceBaseUrl,
+                ConfigurationConstants.jiraRestServiceAuthUser to if (jiraResolveWithAPI) jiraAuthUser else "",
+                ConfigurationConstants.jiraRestServiceAuthPassword to if (jiraResolveWithAPI) jiraAuthPwd else ""
+        )
     }
 }

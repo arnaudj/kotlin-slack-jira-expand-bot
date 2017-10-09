@@ -45,7 +45,8 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
 
         }
         catch (t:Throwable){
-            return JiraEntity(jiraId, jiraIssueBrowseURL, t.message ?: "Exception")
+            t.printStackTrace()
+            return JiraEntity(jiraId, jiraIssueBrowseURL, "Bot error: " + t.message + " caused by " + t.cause?.message)
         }
     }
 

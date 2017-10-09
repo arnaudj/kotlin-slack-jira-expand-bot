@@ -1,2 +1,11 @@
 Next:
-	JiraResolvedEventMapper: Include more information (criticity, author name & avatar (fields.reporter.avatarUrls))
+
+Design
+    SlackBot before sendMessage: Check if still makes sense to have ResolveJiraCommand aggregate N issues (vs N ResolveJiraCommand), cf JiraLinkCommandFactory
+
+
+
+JiraResolvedEventMapper: include author avatar (fields.reporter.avatarUrls))
+Use injector to fetch configuration per token
+Use external configuration (jira host, token, watched jira project keys)
+Simple slack API: allow to set ts field of an attachment, ex: https://api.slack.com/docs/message-attachments

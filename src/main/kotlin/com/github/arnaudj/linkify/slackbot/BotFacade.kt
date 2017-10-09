@@ -4,9 +4,12 @@ import com.github.arnaudj.linkify.cqrs.DataStore
 import com.github.arnaudj.linkify.cqrs.commands.CommandDispatcher
 import com.github.arnaudj.linkify.cqrs.events.Event
 import com.github.arnaudj.linkify.slackbot.cqrs.JiraLinkCommandFactory
-import com.github.arnaudj.linkify.slackbot.cqrs.JiraResolvedEventMapper
 import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
+import com.github.arnaudj.linkify.slackbot.cqrs.mappers.JiraBotReplyFormat
+import com.github.arnaudj.linkify.slackbot.cqrs.mappers.JiraResolvedEventMapperExtendedReply
+import com.github.arnaudj.linkify.slackbot.cqrs.mappers.JiraResolvedEventMapperShortReply
 import com.github.salomonbrys.kodein.Kodein
+import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
@@ -33,10 +36,14 @@ class BotFacade(val executor: Executor, kodein: Kodein) {
     }
 
     companion object BotFacade {
-        fun eventToMarkup(event: Event, configMap: Map<String, Any>): String {
+        fun createSlackMessageFromEvent(event: Event, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat): List<SlackPreparedMessage> {
             return when (event) {
-                is JiraResolved -> JiraResolvedEventMapper().map(event, configMap)
-                else -> "Unsupported event type"
+                is JiraResolved ->
+                    when (jiraBotReplyFormat) {
+                        JiraBotReplyFormat.SHORT -> JiraResolvedEventMapperShortReply().map(event, configMap)
+                        JiraBotReplyFormat.EXTENDED -> JiraResolvedEventMapperExtendedReply().map(event, configMap)
+                    }
+                else -> error("Unsupported event type")
             }
         }
     }

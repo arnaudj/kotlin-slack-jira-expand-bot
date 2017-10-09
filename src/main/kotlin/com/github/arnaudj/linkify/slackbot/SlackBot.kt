@@ -4,7 +4,9 @@ import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraBrowseIssueB
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthPassword
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
+import com.github.arnaudj.linkify.slackbot.cqrs.mappers.JiraBotReplyFormat
 import com.github.salomonbrys.kodein.Kodein
+import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
 import org.apache.commons.cli.CommandLine
@@ -16,10 +18,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-// TODO JiraResolvedEventMapper: Include more information (criticity, author name & avatar (fields.reporter.avatarUrls))
-// TODO Use injector to fetch configuration per token
-// TODO Handle external configuration (jira host, token, watched jira project keys)
-
 fun main(args: Array<String>) {
 
     val options = Options()
@@ -27,6 +25,7 @@ fun main(args: Array<String>) {
     options.addOption("p", true, "http proxy with format host:port")
     options.addOption("jia", true, "jira http base address for issues browsing (ex: http://jira.nodomain/browse)")
     options.addOption("jrs", true, "jira http base address for rest service (ex: http://jira.nodomain, without '/rest/api/latest/')")
+    options.addOption("jfmt", true, "jira bot replies format: ${JiraBotReplyFormat.knownValues()}")
     options.addOption("u", true, "jira credentials to resolve issues information, with format user:password")
     options.addOption("h", false, "help")
 
@@ -43,13 +42,15 @@ fun main(args: Array<String>) {
     val commandsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val eventsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val (jiraUser, jiraPassword) = extractJiraCredentials(cmdLine)
+    val jiraBotRepliesFormat = extractJiraRepliesFormat(cmdLine, "jfmt")
     val configMap = mapOf(
             jiraBrowseIssueBaseUrl to validateOptionUrl(cmdLine, "jia"),
             jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs"),
             jiraRestServiceAuthUser to jiraUser,
             jiraRestServiceAuthPassword to jiraPassword
     )
-    runBot(token, proxy, configMap, commandsExecutorService, eventsExecutorService)
+
+    runBot(token, proxy, configMap, jiraBotRepliesFormat, commandsExecutorService, eventsExecutorService)
 }
 
 private fun extractJiraCredentials(cmdLine: CommandLine): List<String> {
@@ -60,6 +61,16 @@ private fun extractJiraCredentials(cmdLine: CommandLine): List<String> {
         }
     }
     return listOf("", "")
+}
+
+private fun extractJiraRepliesFormat(cmdLine: CommandLine, option: String): JiraBotReplyFormat {
+    requireOption(cmdLine, option)
+    val value = cmdLine.getOptionValue(option)
+    try {
+        return JiraBotReplyFormat.valueOf(value?.toUpperCase() ?: "")
+    } catch (t: Throwable) {
+        error("Unsupported content for option $option: $value")
+    }
 }
 
 private fun validateOptionUrl(cmdLine: CommandLine, option: String): String {
@@ -80,7 +91,7 @@ private fun requireOption(cmdLine: CommandLine, option: String) {
     require(cmdLine.hasOption(option), { "Missing mandatory option: $option" })
 }
 
-private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
+private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat,
                    commandsExecutorService: ScheduledExecutorService,
                    eventsExecutorService: ScheduledExecutorService) {
     val session = SlackSessionFactory.getSlackSessionBuilder(token).apply {
@@ -107,9 +118,11 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>,
     eventsExecutorService.scheduleWithFixedDelay(
             {
                 bot.handleEvents { eventReady ->
-                    val markup = BotFacade.eventToMarkup(eventReady, configMap)
+                    val preparedMessage: List<SlackPreparedMessage> = BotFacade.createSlackMessageFromEvent(eventReady, configMap, jiraBotReplyFormat)
                     val channel = session.findChannelById(eventReady.sourceId)
-                    session.sendMessage(channel, markup)
+                    preparedMessage.forEach {
+                        session.sendMessage(channel, it)
+                    }
                 }
             },
             0, 50, TimeUnit.MILLISECONDS
