@@ -10,11 +10,12 @@ class JiraLinkCommandFactory(val kodein: Kodein) : CommandFactory {
     val pattern: Pattern = Pattern.compile("([A-Za-z]{4,7}-\\d{1,5})+")
 
     override fun createFrom(message: String, channelId: String, userId: String): List<Command> {
-        val command = extractJiraIssueReferences(message) ?: return emptyList()
-        return listOf(ResolveJiraCommand(command, channelId, userId, kodein))
+        return extractJiraIssueReferences(message).map { key ->
+            ResolveJiraCommand(key, channelId, userId, kodein)
+        }
     }
 
-    private fun extractJiraIssueReferences(message: String): List<String>? {
+    private fun extractJiraIssueReferences(message: String): List<String> {
         val ret = mutableListOf<String>()
         val matcher = pattern.matcher(message)
 
@@ -23,6 +24,6 @@ class JiraLinkCommandFactory(val kodein: Kodein) : CommandFactory {
             ret.add(jiraRef.toUpperCase())
         }
 
-        return if (ret.isEmpty()) null else ret
+        return if (ret.isEmpty()) emptyList() else ret
     }
 }

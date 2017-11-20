@@ -10,9 +10,7 @@ abstract class JiraResolvedEventMapperBase {
 
     fun map(event: JiraResolved, configMap: Map<String, Any>): List<SlackPreparedMessage> {
         val jiraHostURL = configMap[ConfigurationConstants.jiraBrowseIssueBaseUrl] as String
-        return event.issues.map {
-            mapEntity(jiraHostURL, it)
-        }.toList()
+        return listOf(mapEntity(jiraHostURL, event.entity))
     }
 
     fun getTitle(e: JiraEntity, defaultValue: String = "No summary found"): String =

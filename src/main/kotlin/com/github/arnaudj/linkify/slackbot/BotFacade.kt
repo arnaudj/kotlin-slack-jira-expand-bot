@@ -19,8 +19,7 @@ class BotFacade(val executor: Executor, kodein: Kodein) {
     val eventStore = DataStore<Event>()
 
     fun handleMessage(message: String, channelId: String, userId: String) {
-        val commands = dispatcher.createFrom(message, channelId, userId)
-        commands.forEach { command ->
+        dispatcher.createFrom(message, channelId, userId).forEach { command ->
             executor.execute {
                 val events = command.execute()
                 eventStore.store.addAll(events)

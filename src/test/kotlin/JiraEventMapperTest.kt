@@ -22,7 +22,7 @@ class JiraEventMapperTest : JiraWithInterceptorTestBase() {
     @Test
     fun `(extended reply format) Test event mapper`() {
         setupConfigMap(jiraResolveWithAPI = false)
-        val event = JiraResolved("uuid1", listOf(jiraEntity1))
+        val event = JiraResolved("uuid1", jiraEntity1)
         val preparedMessages = BotFacade.createSlackMessageFromEvent(event, configMap, jiraBotReplyFormatExtended)
 
         Assert.assertEquals(1, preparedMessages.size)
