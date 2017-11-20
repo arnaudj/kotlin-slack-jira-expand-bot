@@ -1,12 +1,12 @@
 import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
-import com.github.arnaudj.linkify.slackbot.cqrs.mappers.JiraBotReplyFormat
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.ullink.slack.simpleslackapi.SlackField
 import org.junit.Assert
 import org.junit.Test
 
-class JiraEventMapperTest : JiraWithInterceptorTestBase() {
+class JiraEventMapperTest : JiraTestBase() {
     val jiraBotReplyFormatExtended = JiraBotReplyFormat.EXTENDED
     val jiraEntity1 = JiraEntity(key = "JIRA-1234", jiraIssueBrowseURL = "http://localhost/browse", summary = "A subtask with some summary here",
             fieldsMap = mapOf(
@@ -22,7 +22,7 @@ class JiraEventMapperTest : JiraWithInterceptorTestBase() {
     @Test
     fun `(extended reply format) Test event mapper`() {
         setupConfigMap(jiraResolveWithAPI = false)
-        val event = JiraResolved("uuid1", jiraEntity1)
+        val event = JiraResolvedEvent("uuid1", jiraEntity1)
         val preparedMessages = BotFacade.createSlackMessageFromEvent(event, configMap, jiraBotReplyFormatExtended)
 
         Assert.assertEquals(1, preparedMessages.size)

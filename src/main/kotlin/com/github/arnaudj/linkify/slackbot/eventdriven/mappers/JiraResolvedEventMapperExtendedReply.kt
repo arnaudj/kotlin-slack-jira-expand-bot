@@ -1,13 +1,13 @@
-package com.github.arnaudj.linkify.slackbot.cqrs.mappers
+package com.github.arnaudj.linkify.slackbot.eventdriven.mappers
 
-import com.github.arnaudj.linkify.cqrs.ReplyEventMapper
-import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
+import com.github.arnaudj.linkify.eventdriven.mappers.ReplyEventMapper
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.ullink.slack.simpleslackapi.SlackAttachment
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import org.joda.time.format.DateTimeFormat
 
-class JiraResolvedEventMapperExtendedReply : JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolved, List<SlackPreparedMessage>> {
+class JiraResolvedEventMapperExtendedReply : JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolvedEvent, List<SlackPreparedMessage>> {
     val priorityColorMap = mapOf("Minor" to "green", "Major" to "#439FE0", "Critical" to "warning", "Blocker" to "danger")
 
     override fun mapEntity(jiraHostURL: String, e: JiraEntity): SlackPreparedMessage {

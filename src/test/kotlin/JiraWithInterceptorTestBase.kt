@@ -1,25 +1,21 @@
-import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.slackbot.BotFacade
 import com.github.arnaudj.linkify.slackbot.SlackbotModule
+import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.spi.jira.restclient.Jira7RestClientImpl
 import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.bind
 import com.github.salomonbrys.kodein.singleton
+import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import okhttp3.*
-import java.util.concurrent.Executor
 
 fun String.loadFromResources() = JiraWithInterceptorTestBase::class.java.getResource(this).readText()
 
-open class JiraWithInterceptorTestBase {
-    val jiraBrowseIssueBaseUrl = "http://localhost/browse"
-    val jiraRestServiceBaseUrl = "http://localhost.test"
-    val jiraAuthUser = "someuser"
-    val jiraAuthPwd = "somepwd"
-
+open class JiraWithInterceptorTestBase : JiraTestBase() {
     lateinit var bot: BotFacade
-    lateinit var configMap: Map<String, Any>
     lateinit var kodein: Kodein
+
+    val replies = mutableListOf<SlackPreparedMessage>()
 
     class StubbedJiraRestClient(configMap: Map<String, Any>) : Jira7RestClientImpl(configMap), JiraRestClient {
         val mockReplies = mapOf(
@@ -32,7 +28,7 @@ open class JiraWithInterceptorTestBase {
             this.addInterceptor { chain: Interceptor.Chain ->
                 val req = chain.request()
 
-                assert(Credentials.basic(jiraAuthUser, jiraAuthPwd) == req.header("Authorization"), {"Invalid Credentials"})
+                assert(Credentials.basic(jiraAuthUser, jiraAuthPwd) == req.header("Authorization"), { "Invalid Credentials" })
 
                 val rawReply = mockReplies[req.url().encodedPath()]
                 val reply = rawReply ?: error("No stub found for this URL")
@@ -56,16 +52,13 @@ open class JiraWithInterceptorTestBase {
                 bind<JiraRestClient>(overrides = true) with singleton { StubbedJiraRestClient(configMap) }
         }
 
-        val currentThreadExecutor = Executor { it.run() }
-        bot = BotFacade(currentThreadExecutor, kodein)
+        bot = BotFacade(kodein) { event ->
+            println("BotFacade: handle event: $event")
+            BotFacade.createSlackMessageFromEvent(event, configMap, JiraBotReplyFormat.SHORT).forEach {
+                replies.add(it)
+            }
+        }
     }
 
-    fun setupConfigMap(jiraResolveWithAPI: Boolean) {
-        configMap = mapOf(
-                ConfigurationConstants.jiraBrowseIssueBaseUrl to jiraBrowseIssueBaseUrl,
-                ConfigurationConstants.jiraRestServiceBaseUrl to jiraRestServiceBaseUrl,
-                ConfigurationConstants.jiraRestServiceAuthUser to if (jiraResolveWithAPI) jiraAuthUser else "",
-                ConfigurationConstants.jiraRestServiceAuthPassword to if (jiraResolveWithAPI) jiraAuthPwd else ""
-        )
-    }
+
 }

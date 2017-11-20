@@ -1,21 +1,11 @@
-import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.github.arnaudj.linkify.slackbot.cqrs.mappers.JiraBotReplyFormat
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import org.junit.Assert
 import org.junit.Test
 
 
 class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
-    val replies = mutableListOf<SlackPreparedMessage>()
-    val jiraBotReplyFormatShort = JiraBotReplyFormat.SHORT
-
     fun receiveChatMessage(message: String, channel: String, user: String) {
-        bot.handleMessage(message, channel, user)
-        bot.handleEvents {
-            BotFacade.createSlackMessageFromEvent(it, configMap, jiraBotReplyFormatShort).forEach {
-                replies.add(it)
-            }
-        }
+        bot.handleChatMessage(message, channel, user)
     }
 
     @Test

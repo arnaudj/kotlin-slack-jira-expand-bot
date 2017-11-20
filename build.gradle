@@ -30,6 +30,7 @@ dependencies {
     compile 'org.slf4j:slf4j-simple:1.7.7'
     compile 'org.slf4j:slf4j-api:1.7.7'
     compile 'commons-cli:commons-cli:1.4'
+    compile 'com.google.guava:guava:23.0'
     // Jira client
     compile 'com.squareup.okhttp3:okhttp:3.8.1'
     compile 'com.google.code.gson:gson:2.8.1'

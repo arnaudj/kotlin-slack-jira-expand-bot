@@ -1,11 +1,11 @@
-package com.github.arnaudj.linkify.slackbot.cqrs.mappers
+package com.github.arnaudj.linkify.slackbot.eventdriven.mappers
 
-import com.github.arnaudj.linkify.cqrs.ReplyEventMapper
-import com.github.arnaudj.linkify.slackbot.cqrs.events.JiraResolved
+import com.github.arnaudj.linkify.eventdriven.mappers.ReplyEventMapper
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 
-class JiraResolvedEventMapperShortReply : JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolved, List<SlackPreparedMessage>> {
+class JiraResolvedEventMapperShortReply : JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolvedEvent, List<SlackPreparedMessage>> {
     override fun mapEntity(jiraHostURL: String, e: JiraEntity): SlackPreparedMessage {
         return SlackPreparedMessage.Builder().withMessage(formatJiraIssueLinkAndSummary(jiraHostURL, e)).build()
     }

@@ -4,7 +4,8 @@ import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraBrowseIssueB
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthPassword
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
-import com.github.arnaudj.linkify.slackbot.cqrs.mappers.JiraBotReplyFormat
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
@@ -16,7 +17,6 @@ import org.apache.commons.cli.Options
 import java.net.Proxy
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
 
@@ -113,20 +113,20 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     val kodein = Kodein {
         import(SlackbotModule.getInjectionBindings(configMap))
     }
-    val bot = BotFacade(commandsExecutorService, kodein)
-
-    eventsExecutorService.scheduleWithFixedDelay(
-            {
-                bot.handleEvents { eventReady ->
-                    val preparedMessage: List<SlackPreparedMessage> = BotFacade.createSlackMessageFromEvent(eventReady, configMap, jiraBotReplyFormat)
-                    val channel = session.findChannelById(eventReady.sourceId)
-                    preparedMessage.forEach {
-                        session.sendMessage(channel, it)
-                    }
+    val bot = BotFacade(kodein) { event ->
+        when(event) {
+            is JiraResolvedEvent -> {
+                println("BotFacade processing event: $event")
+                val preparedMessage: List<SlackPreparedMessage> = BotFacade.createSlackMessageFromEvent(event, configMap, jiraBotReplyFormat)
+                val channel = session.findChannelById(event.sourceId)
+                preparedMessage.forEach {
+                    session.sendMessage(channel, it)
                 }
-            },
-            0, 50, TimeUnit.MILLISECONDS
-    )
+            }
+            else -> error("Unsupported event in bot: $event")
+        }
+
+    }
 
     session.addMessagePostedListener(SlackMessagePostedListener { event, _ ->
         //if (event.channelId.id != session.findChannelByName("thechannel").id) return // target per channelId
@@ -135,7 +135,7 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
             return@SlackMessagePostedListener // filter own messages, especially not to match own replies indefinitely
 
         with(event) {
-            bot.handleMessage(messageContent, channel.id, user.id)
+            bot.handleChatMessage(messageContent, channel.id, user.id)
         }
     })
 }
