@@ -1,5 +1,9 @@
+import com.github.arnaudj.linkify.slackbot.AppEventHandler
 import com.github.arnaudj.linkify.slackbot.BotFacade
 import com.github.arnaudj.linkify.slackbot.SlackbotModule
+import com.github.arnaudj.linkify.slackbot.eventdriven.commands.ResolveJiraCommand
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.spi.jira.restclient.Jira7RestClientImpl
 import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
@@ -52,13 +56,20 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
                 bind<JiraRestClient>(overrides = true) with singleton { StubbedJiraRestClient(configMap) }
         }
 
-        bot = BotFacade(kodein) { event ->
-            println("BotFacade: handle event: $event")
-            BotFacade.createSlackMessageFromEvent(event, configMap, JiraBotReplyFormat.SHORT).forEach {
-                replies.add(it)
+        bot = BotFacade(kodein, object : AppEventHandler {
+            override fun onJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
+                doDefaultOnJiraSeenEvent(event, bot, kodein)
             }
-        }
+
+            override fun onJiraResolvedEvent(event: JiraResolvedEvent, bot: BotFacade, kodein: Kodein) {
+                BotFacade.createSlackMessageFromEvent(event, configMap, JiraBotReplyFormat.SHORT).forEach {
+                    replies.add(it)
+                }
+            }
+        })
+
     }
+
 
 
 }

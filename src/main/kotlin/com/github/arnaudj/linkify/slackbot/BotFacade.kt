@@ -3,12 +3,15 @@ package com.github.arnaudj.linkify.slackbot
 import com.github.arnaudj.linkify.eventdriven.commands.Command
 import com.github.arnaudj.linkify.eventdriven.commands.CommandDispatcher
 import com.github.arnaudj.linkify.eventdriven.events.Event
-import com.github.arnaudj.linkify.slackbot.eventdriven.ResolveJiraCommandFactory
+import com.github.arnaudj.linkify.slackbot.eventdriven.MessageToCommandFactory
+import com.github.arnaudj.linkify.slackbot.eventdriven.commands.NotifyJiraSeenCommand
 import com.github.arnaudj.linkify.slackbot.eventdriven.commands.ResolveJiraCommand
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperExtendedReply
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperShortReply
+import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
 import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.instance
@@ -18,9 +21,18 @@ import com.google.common.eventbus.Subscribe
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 
 
-class BotFacade(kodein: Kodein, val appEventHandler: (Event) -> Unit) {
+interface AppEventHandler {
+    fun onJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein)
+    fun onJiraResolvedEvent(event: JiraResolvedEvent, bot: BotFacade, kodein: Kodein)
 
-    val dispatcher = CommandDispatcher(ResolveJiraCommandFactory(kodein))
+    fun doDefaultOnJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
+        bot.postBusCommand(ResolveJiraCommand(event.entity.key, event.sourceId, kodein))
+    }
+}
+
+class BotFacade(val kodein: Kodein, val appEventHandler: AppEventHandler) {
+
+    val dispatcher = CommandDispatcher(MessageToCommandFactory(kodein))
     var eventBus: EventBus
     val jiraService: JiraResolutionService = kodein.instance()
 
@@ -29,18 +41,30 @@ class BotFacade(kodein: Kodein, val appEventHandler: (Event) -> Unit) {
         eventBus.register(this)
     }
 
-    // FIXME have an extra step, so bot receives a JiraSeenEvent and decides to act on it/disregard
-    fun handleChatMessage(message: String, sourceId: String, userId: String) = dispatcher.createFrom(message, sourceId, userId).forEach { postBusCommand(it) }
+    fun handleChatMessage(message: String, sourceId: String, userId: String) =
+            dispatcher.createFrom(message, sourceId, userId).forEach { postBusCommand(it) }
+
+    @Subscribe
+    fun onNotifyJiraSeenCommand(event: NotifyJiraSeenCommand) {
+        println("onNotifyJiraSeenCommand(): ${event}")
+        postBusEvent(JiraSeenEvent(event.sourceId, JiraEntity(event.key, "")))
+    }
 
     @Subscribe
     fun onResolveJiraCommand(event: ResolveJiraCommand) {
         println("onResolveJiraCommand(): ${event}")
+
+        // TODO Dethread here, to avoid event bus congestion, as we use jiraService from an eventbus dispatcher thread here (regardless of sync or async)
         postBusEvent(JiraResolvedEvent(event.sourceId, jiraService.resolve(event.key)))
     }
 
     @Subscribe
-    fun onDeadEvent(event: Event) {
-        appEventHandler(event)
+    fun onEvent(event: Event) {
+        when (event) {
+            is JiraSeenEvent -> appEventHandler.onJiraSeenEvent(event, this, kodein)
+            is JiraResolvedEvent -> appEventHandler.onJiraResolvedEvent(event, this, kodein)
+            else -> error("Unsupported event in bot: $event")
+        }
     }
 
     @Subscribe
@@ -49,12 +73,12 @@ class BotFacade(kodein: Kodein, val appEventHandler: (Event) -> Unit) {
     }
 
     fun postBusCommand(command: Command) {
-        println("postBusCommand = ${command}")
+        println("> postBusCommand: ${command}")
         eventBus.post(command)
     }
 
     fun postBusEvent(event: Event) {
-        println("postBusEvent = ${event}")
+        println("> postBusEvent: ${event}")
         eventBus.post(event)
     }
 
