@@ -9,13 +9,17 @@ import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperExtendedReply
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperShortReply
+import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
 import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.instance
 import com.google.common.eventbus.DeadEvent
 import com.google.common.eventbus.EventBus
 import com.google.common.eventbus.Subscribe
+import com.google.common.util.concurrent.*
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 
 interface AppEventHandler {
@@ -27,13 +31,17 @@ interface AppEventHandler {
     }
 }
 
-class BotFacade(val kodein: Kodein, val appEventHandler: AppEventHandler) {
-    var eventBus: EventBus
+class BotFacade(val kodein: Kodein, workerPoolSize: Int, val appEventHandler: AppEventHandler) {
+    val eventBus: EventBus = EventBus()
     val jiraService: JiraResolutionService = kodein.instance()
+    val workerPool: ListeningExecutorService
 
     init {
-        eventBus = EventBus() // TODO allow to use AsyncEventBus for prod
         eventBus.register(this)
+        workerPool = if (workerPoolSize > 0)
+            MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(workerPoolSize))
+        else
+            MoreExecutors.listeningDecorator(MoreExecutors.newDirectExecutorService())
     }
 
     fun handleChatMessage(message: String, sourceId: String, userId: String) =
@@ -41,12 +49,22 @@ class BotFacade(val kodein: Kodein, val appEventHandler: AppEventHandler) {
                     .flatMap { factory -> factory.createFrom(message, sourceId, userId) }
                     .forEach { event -> postBusEvent(event) }
 
+
     @Subscribe
     fun onResolveJiraCommand(event: ResolveJiraCommand) {
-        println("onResolveJiraCommand(): ${event}")
+        println("onResolveJiraCommand() handling ${event}")
+        val future: ListenableFuture<JiraEntity>? = workerPool.submit(Callable<JiraEntity> { jiraService.resolve(event.key) })
 
-        // TODO Dethread here, to avoid event bus congestion, as we use jiraService from an eventbus dispatcher thread here (regardless of sync or async)
-        postBusEvent(JiraResolvedEvent(event.sourceId, jiraService.resolve(event.key)))
+        Futures.addCallback(future, object : FutureCallback<JiraEntity> {
+            override fun onSuccess(result: JiraEntity?) {
+                postBusEvent(JiraResolvedEvent(event.sourceId, result!!))
+            }
+
+            override fun onFailure(t: Throwable?) {
+                System.err.println("Unable to resolve for event: $event")
+                t?.printStackTrace()
+            }
+        }, workerPool)
     }
 
     @Subscribe

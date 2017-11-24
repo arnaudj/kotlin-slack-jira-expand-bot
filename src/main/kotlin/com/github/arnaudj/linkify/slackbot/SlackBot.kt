@@ -10,6 +10,8 @@ import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.salomonbrys.kodein.Kodein
 import com.google.common.eventbus.EventBus
+import com.google.common.util.concurrent.ListeningExecutorService
+import com.google.common.util.concurrent.MoreExecutors
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
@@ -41,9 +43,6 @@ fun main(args: Array<String>) {
 
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
     val proxy = cmdLine.getOptionValue("p")
-
-    val commandsExecutorService = Executors.newSingleThreadScheduledExecutor()
-    val eventsExecutorService = Executors.newSingleThreadScheduledExecutor()
     val (jiraUser, jiraPassword) = extractJiraCredentials(cmdLine)
     val jiraBotRepliesFormat = extractJiraRepliesFormat(cmdLine, "jfmt")
     val configMap = mapOf(
@@ -53,7 +52,7 @@ fun main(args: Array<String>) {
             jiraRestServiceAuthPassword to jiraPassword
     )
 
-    runBot(token, proxy, configMap, jiraBotRepliesFormat, commandsExecutorService, eventsExecutorService)
+    runBot(token, proxy, configMap, jiraBotRepliesFormat)
 }
 
 private fun extractJiraCredentials(cmdLine: CommandLine): List<String> {
@@ -94,9 +93,7 @@ private fun requireOption(cmdLine: CommandLine, option: String) {
     require(cmdLine.hasOption(option), { "Missing mandatory option: $option" })
 }
 
-private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat,
-                   commandsExecutorService: ScheduledExecutorService,
-                   eventsExecutorService: ScheduledExecutorService) {
+private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat) {
     val session = SlackSessionFactory.getSlackSessionBuilder(token).apply {
         withAutoreconnectOnDisconnection(true)
 
@@ -116,7 +113,7 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     val kodein = Kodein {
         import(SlackbotModule.getInjectionBindings(configMap))
     }
-    val bot = BotFacade(kodein, object : AppEventHandler {
+    val bot = BotFacade(kodein, 10, object : AppEventHandler {
         override fun onJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
             // TODO Throttling
             doDefaultOnJiraSeenEvent(event, bot, kodein)

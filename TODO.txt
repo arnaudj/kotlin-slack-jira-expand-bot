@@ -1,9 +1,5 @@
 Next
-    BotFacade.handleChatMessage: have an extra step, so bot receives a JiraSeenEvent and decides to act on it/disregard
-        Done: JiraSeenEvent
-        TODO: throttling
-        TODO dethread com.github.arnaudj.linkify.slackbot.BotFacade.onResolveJiraCommand
-    BotFacade.init: Allow to AsyncEventBus@BotFacade for non test part
+    TODO: throttling com.github.arnaudj.linkify.slackbot.AppEventHandler.onJiraSeenEvent
 
 JiraResolvedEventMapper: include author avatar (fields.reporter.avatarUrls))
 Use injector to fetch configuration per token

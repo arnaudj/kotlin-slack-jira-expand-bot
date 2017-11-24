@@ -1,7 +1,6 @@
 import com.github.arnaudj.linkify.slackbot.AppEventHandler
 import com.github.arnaudj.linkify.slackbot.BotFacade
 import com.github.arnaudj.linkify.slackbot.SlackbotModule
-import com.github.arnaudj.linkify.slackbot.eventdriven.commands.ResolveJiraCommand
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
@@ -56,7 +55,7 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
                 bind<JiraRestClient>(overrides = true) with singleton { StubbedJiraRestClient(configMap) }
         }
 
-        bot = BotFacade(kodein, object : AppEventHandler {
+        bot = BotFacade(kodein, -1, object : AppEventHandler {
             override fun onJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
                 doDefaultOnJiraSeenEvent(event, bot, kodein)
             }
@@ -69,7 +68,6 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
         })
 
     }
-
 
 
 }
