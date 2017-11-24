@@ -5,6 +5,4 @@ import com.github.arnaudj.linkify.spi.jira.JiraKeyType
 import com.github.salomonbrys.kodein.Kodein
 
 
-data class NotifyJiraSeenCommand(val key: JiraKeyType, val sourceId: String, val kodein: Kodein) : Command
-
 data class ResolveJiraCommand(val key: JiraKeyType, val sourceId: String, val kodein: Kodein) : Command

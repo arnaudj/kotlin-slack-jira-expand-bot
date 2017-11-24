@@ -1,17 +1,17 @@
 package com.github.arnaudj.linkify.slackbot.eventdriven
 
-import com.github.arnaudj.linkify.eventdriven.commands.Command
-import com.github.arnaudj.linkify.eventdriven.commands.CommandFactory
-import com.github.arnaudj.linkify.slackbot.eventdriven.commands.NotifyJiraSeenCommand
-import com.github.salomonbrys.kodein.Kodein
+import com.github.arnaudj.linkify.eventdriven.commands.InboundMessageEventFactory
+import com.github.arnaudj.linkify.eventdriven.events.Event
+import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
+import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import java.util.regex.Pattern
 
-class MessageToCommandFactory(val kodein: Kodein) : CommandFactory {
+class JiraEventFactory : InboundMessageEventFactory {
     val pattern: Pattern = Pattern.compile("([A-Za-z]{4,7}-\\d{1,5})+")
 
-    override fun createFrom(message: String, sourceId: String, userId: String): List<Command> {
+    override fun createFrom(message: String, sourceId: String, userId: String): List<Event> {
         return extractJiraIssueReferences(message).map { key ->
-            NotifyJiraSeenCommand(key, sourceId, kodein)
+            JiraSeenEvent(sourceId, JiraEntity(key))
         }
     }
 

@@ -1,17 +1,14 @@
 package com.github.arnaudj.linkify.slackbot
 
 import com.github.arnaudj.linkify.eventdriven.commands.Command
-import com.github.arnaudj.linkify.eventdriven.commands.CommandDispatcher
 import com.github.arnaudj.linkify.eventdriven.events.Event
-import com.github.arnaudj.linkify.slackbot.eventdriven.MessageToCommandFactory
-import com.github.arnaudj.linkify.slackbot.eventdriven.commands.NotifyJiraSeenCommand
+import com.github.arnaudj.linkify.slackbot.eventdriven.JiraEventFactory
 import com.github.arnaudj.linkify.slackbot.eventdriven.commands.ResolveJiraCommand
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperExtendedReply
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperShortReply
-import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
 import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.instance
@@ -31,8 +28,6 @@ interface AppEventHandler {
 }
 
 class BotFacade(val kodein: Kodein, val appEventHandler: AppEventHandler) {
-
-    val dispatcher = CommandDispatcher(MessageToCommandFactory(kodein))
     var eventBus: EventBus
     val jiraService: JiraResolutionService = kodein.instance()
 
@@ -42,13 +37,9 @@ class BotFacade(val kodein: Kodein, val appEventHandler: AppEventHandler) {
     }
 
     fun handleChatMessage(message: String, sourceId: String, userId: String) =
-            dispatcher.createFrom(message, sourceId, userId).forEach { postBusCommand(it) }
-
-    @Subscribe
-    fun onNotifyJiraSeenCommand(event: NotifyJiraSeenCommand) {
-        println("onNotifyJiraSeenCommand(): ${event}")
-        postBusEvent(JiraSeenEvent(event.sourceId, JiraEntity(event.key, "")))
-    }
+            arrayOf(JiraEventFactory())
+                    .flatMap { factory -> factory.createFrom(message, sourceId, userId) }
+                    .forEach { event -> postBusEvent(event) }
 
     @Subscribe
     fun onResolveJiraCommand(event: ResolveJiraCommand) {
