@@ -2,7 +2,7 @@ group 'com.github.arnaudj'
 version '0.9.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.1.4'
+    ext.kotlin_version = '1.2.41'
 
     repositories {
         mavenCentral()
