@@ -3,7 +3,11 @@ package com.github.arnaudj.linkify.spi.jira
 import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 
-class JiraResolutionServiceImpl(configMap: Map<String, Any>, val restClient: JiraRestClient) : JiraResolutionService {
+class JiraResolutionServiceImpl(
+        configMap: Map<String, Any>,
+        val restClient: JiraRestClient
+) : JiraResolutionService {
+
     val jiraIssueBrowseURL = configMap[ConfigurationConstants.jiraBrowseIssueBaseUrl] as String
     val jiraRestServiceBaseUrl = configMap[ConfigurationConstants.jiraRestServiceBaseUrl] as String
     val resolveViaAPI = !(configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String).isEmpty()

@@ -37,14 +37,12 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
                 val payload = response.body()?.string() ?: ""
                 println("< [jira client] Reply: ###$payload###")
 
-                if (payload.isEmpty())
-                    return JiraEntity(jiraId, jiraIssueBrowseURL, "Empty reply")
-
-                return decodeEntity(payload, jiraIssueBrowseURL)
+                return if (payload.isEmpty())
+                    JiraEntity(jiraId, jiraIssueBrowseURL, "Empty reply")
+                else
+                    decodeEntity(payload, jiraIssueBrowseURL)
             }
-
-        }
-        catch (t:Throwable){
+        } catch (t: Throwable) {
             t.printStackTrace()
             return JiraEntity(jiraId, jiraIssueBrowseURL, "Bot error: " + t.message + " caused by " + t.cause?.message)
         }

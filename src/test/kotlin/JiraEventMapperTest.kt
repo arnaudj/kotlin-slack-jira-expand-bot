@@ -8,7 +8,9 @@ import org.junit.Test
 
 class JiraEventMapperTest : JiraTestBase() {
     val jiraBotReplyFormatExtended = JiraBotReplyFormat.EXTENDED
-    val jiraEntity1 = JiraEntity(key = "JIRA-1234", jiraIssueBrowseURL = "http://localhost/browse", summary = "A subtask with some summary here",
+    val jiraEntity1 = JiraEntity(key = "JIRA-1234",
+            jiraIssueBrowseURL = "http://localhost/browse",
+            summary = "A subtask with some summary here",
             fieldsMap = mapOf(
                     "summary" to "Some summary here",
                     "created" to "2017-03-17T15:37:10.000+0100",
@@ -27,16 +29,15 @@ class JiraEventMapperTest : JiraTestBase() {
 
         Assert.assertEquals(1, preparedMessages.size)
         val pm = preparedMessages[0]
-
         Assert.assertEquals(1, pm.attachments.size)
-        val pmatt1 = pm.attachments[0]
-        Assert.assertEquals("JIRA-1234: A subtask with some summary here", pmatt1.title)
-        Assert.assertEquals("A subtask with some summary here", pmatt1.fallback)
-        Assert.assertEquals("", pmatt1.text)
-        Assert.assertEquals("", pmatt1.pretext)
-        Assert.assertEquals("<!date^1500280975^Updated: {date_num} {time_secs}|2017-07-17T10:42:55.000+0200>", pmatt1.footer)
-        Assert.assertEquals("[Priority=Minor, Status=Closed, Reporter=jdoe, Assignee=noone]", expandFields(pmatt1.fields))
-
+        with(pm.attachments[0]) {
+            Assert.assertEquals("JIRA-1234: A subtask with some summary here", title)
+            Assert.assertEquals("A subtask with some summary here", fallback)
+            Assert.assertEquals("", text)
+            Assert.assertEquals("", pretext)
+            Assert.assertEquals("<!date^1500280975^Updated: {date_num} {time_secs}|2017-07-17T10:42:55.000+0200>", footer)
+            Assert.assertEquals("[Priority=Minor, Status=Closed, Reporter=jdoe, Assignee=noone]", expandFields(fields))
+        }
     }
 
     fun expandFields(fields: List<SlackField>) = fields.map { "${it.title}=${it.value}" }.toString()
