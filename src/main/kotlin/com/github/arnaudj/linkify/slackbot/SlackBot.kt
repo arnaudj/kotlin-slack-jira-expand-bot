@@ -4,14 +4,10 @@ import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraBrowseIssueB
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthPassword
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
-import com.github.arnaudj.linkify.slackbot.eventdriven.commands.ResolveJiraCommand
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.salomonbrys.kodein.Kodein
-import com.google.common.eventbus.EventBus
-import com.google.common.util.concurrent.ListeningExecutorService
-import com.google.common.util.concurrent.MoreExecutors
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
@@ -20,8 +16,6 @@ import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
 import java.net.Proxy
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 
 fun main(args: Array<String>) {
 
@@ -106,9 +100,8 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     }.build()
 
     println("* Using bot configuration: ${configMap.toList().filter { it.first != jiraRestServiceAuthPassword }.toMap()}")
-
-    session.connect()
-    println("* Bot connected")
+    if ((configMap[jiraRestServiceAuthUser] as String).isEmpty())
+        println("* Jira resolution with API is disabled!")
 
     val kodein = Kodein {
         import(SlackbotModule.getInjectionBindings(configMap))
@@ -139,5 +132,8 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
             bot.handleChatMessage(messageContent, channel.id, user.id)
         }
     })
+
+    session.connect()
+    println("* Session connected")
 }
 
