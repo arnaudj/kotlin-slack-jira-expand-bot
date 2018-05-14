@@ -1,3 +1,4 @@
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import org.junit.Assert
 import org.junit.Test
@@ -5,7 +6,7 @@ import org.junit.Test
 
 class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
     fun receiveChatMessage(message: String, channel: String, user: String) {
-        bot.handleChatMessage(message, channel, user)
+        bot.handleChatMessage(message, EventSourceData( channel, user, "fakeTimestamp", null))
     }
 
     @Test

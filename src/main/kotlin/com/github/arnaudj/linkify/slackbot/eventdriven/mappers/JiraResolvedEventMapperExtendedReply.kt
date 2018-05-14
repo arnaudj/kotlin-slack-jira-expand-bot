@@ -7,10 +7,13 @@ import com.ullink.slack.simpleslackapi.SlackAttachment
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import org.joda.time.format.DateTimeFormat
 
-class JiraResolvedEventMapperExtendedReply : JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolvedEvent, List<SlackPreparedMessage>> {
+class JiraResolvedEventMapperExtendedReply :
+        JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolvedEvent, List<SlackPreparedMessage>> {
+
     val priorityColorMap = mapOf("Minor" to "green", "Major" to "#439FE0", "Critical" to "warning", "Blocker" to "danger")
 
-    override fun mapEntity(jiraHostURL: String, e: JiraEntity): SlackPreparedMessage {
+    override fun createEntityBuilder(jiraHostURL: String, event: JiraResolvedEvent): SlackPreparedMessage.Builder {
+        val e = event.entity
         val attachment = SlackAttachment(
                 "${e.key}: ${getTitle(e)}",
                 getTitle(e),
@@ -33,7 +36,6 @@ class JiraResolvedEventMapperExtendedReply : JiraResolvedEventMapperBase(), Repl
         return SlackPreparedMessage.Builder()
                 //.withMessage() // common message to N attachments of this message
                 .withAttachments(listOf(attachment))
-                .build()
     }
 
     fun getFieldSafe(entity: JiraEntity, name: String) = entity.fieldsMap[name] as? String ?: ""

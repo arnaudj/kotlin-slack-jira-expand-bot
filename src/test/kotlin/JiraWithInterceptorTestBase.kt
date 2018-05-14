@@ -1,9 +1,10 @@
 import com.github.arnaudj.linkify.slackbot.AppEventHandler
 import com.github.arnaudj.linkify.slackbot.BotFacade
 import com.github.arnaudj.linkify.slackbot.SlackbotModule
+import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyFormat
+import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
-import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.spi.jira.restclient.Jira7RestClientImpl
 import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 import com.github.salomonbrys.kodein.Kodein
@@ -24,8 +25,8 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
     )
     val replies = mutableListOf<SlackPreparedMessage>()
 
-    fun setupObjects(jiraResolveWithAPI: Boolean) {
-        setupConfigMap(jiraResolveWithAPI)
+    fun setupObjects(jiraResolveWithAPI: Boolean, jiraBotReplyMode: JiraBotReplyMode = JiraBotReplyMode.INLINE) {
+        setupConfigMap(jiraResolveWithAPI, jiraBotReplyMode)
         kodein = Kodein {
             import(SlackbotModule.getInjectionBindings(configMap))
             if (jiraResolveWithAPI)

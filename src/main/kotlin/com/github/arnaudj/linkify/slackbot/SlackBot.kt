@@ -1,16 +1,22 @@
 package com.github.arnaudj.linkify.slackbot
 
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraBrowseIssueBaseUrl
+import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraReferenceBotReplyMode
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthPassword
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyFormat
+import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
-import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.salomonbrys.kodein.Kodein
+import com.ullink.slack.simpleslackapi.SlackChannel
+import com.ullink.slack.simpleslackapi.SlackMessageHandle
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
+import com.ullink.slack.simpleslackapi.replies.SlackMessageReply
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
@@ -25,6 +31,7 @@ fun main(args: Array<String>) {
     options.addOption("jia", true, "jira http base address for issues browsing (ex: http://jira.nodomain/browse)")
     options.addOption("jrs", true, "jira http base address for rest service (ex: http://jira.nodomain, without '/rest/api/latest/')")
     options.addOption("jfmt", true, "jira bot replies format: ${JiraBotReplyFormat.knownValues()}")
+    options.addOption("jmode", true, "jira bot replies mode: ${JiraBotReplyMode.knownValues()}")
     options.addOption("u", true, "jira credentials to resolve issues information, with format user:password")
     options.addOption("h", false, "help")
 
@@ -38,13 +45,15 @@ fun main(args: Array<String>) {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
     val proxy = cmdLine.getOptionValue("p")
     val (jiraUser, jiraPassword) = extractJiraCredentials(cmdLine)
-    val jiraBotRepliesFormat = extractJiraRepliesFormat(cmdLine, "jfmt")
-    val configMap = mapOf(
+    val jiraBotRepliesFormat = extractEnumOption(cmdLine, "jfmt", { JiraBotReplyFormat.valueOf(it) }) as JiraBotReplyFormat
+    val jiraBotRepliesMode = extractEnumOption(cmdLine, "jmode", { JiraBotReplyMode.valueOf(it) }) as JiraBotReplyMode
+    val configMap = BotFacade.createConfigMap(mapOf(
             jiraBrowseIssueBaseUrl to validateOptionUrl(cmdLine, "jia"),
-            jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs"),
+            jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs", false),
             jiraRestServiceAuthUser to jiraUser,
-            jiraRestServiceAuthPassword to jiraPassword
-    )
+            jiraRestServiceAuthPassword to jiraPassword,
+            jiraReferenceBotReplyMode to jiraBotRepliesMode
+    ))
 
     runBot(token, proxy, configMap, jiraBotRepliesFormat)
 }
@@ -59,19 +68,25 @@ private fun extractJiraCredentials(cmdLine: CommandLine): List<String> {
     return listOf("", "")
 }
 
-private fun extractJiraRepliesFormat(cmdLine: CommandLine, option: String): JiraBotReplyFormat {
+private fun extractEnumOption(cmdLine: CommandLine, option: String, resolve: (String) -> Enum<*>): Enum<*> {
     requireOption(cmdLine, option)
     val value = cmdLine.getOptionValue(option)
     try {
-        return JiraBotReplyFormat.valueOf(value?.toUpperCase() ?: "")
+        return resolve.invoke(value?.toUpperCase() ?: "")
     } catch (t: Throwable) {
         error("Unsupported content for option $option: $value")
     }
 }
 
-private fun validateOptionUrl(cmdLine: CommandLine, option: String): String {
+private fun validateOptionUrl(cmdLine: CommandLine, option: String, mandatory: Boolean = true): String {
+    val value = cmdLine.getOptionValue(option)
+
+    if (!mandatory) {
+        return if (!value.isNullOrEmpty()) validateUrl(value) else ""
+    }
+
     requireOption(cmdLine, option)
-    return validateUrl(cmdLine.getOptionValue(option))
+    return validateUrl(value)
 }
 
 private fun validateUrl(url: String?): String {
@@ -100,8 +115,11 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     }.build()
 
     println("* Using bot configuration: ${configMap.toList().filter { it.first != jiraRestServiceAuthPassword }.toMap()}")
-    if ((configMap[jiraRestServiceAuthUser] as String).isEmpty())
+    if ((configMap[jiraRestServiceBaseUrl] as String).isEmpty() || (configMap[jiraRestServiceAuthUser] as String).isEmpty())
         println("* Jira resolution with API is disabled!")
+
+    val jiraReferencesReplyMode = configMap[jiraReferenceBotReplyMode] as JiraBotReplyMode
+    println("* Using jira references reply mode: $jiraReferencesReplyMode")
 
     val kodein = Kodein {
         import(SlackbotModule.getInjectionBindings(configMap))
@@ -115,10 +133,14 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
         override fun onJiraResolvedEvent(event: JiraResolvedEvent, bot: BotFacade, kodein: Kodein) {
             println("* bot: $event")
             val preparedMessage: List<SlackPreparedMessage> = BotFacade.createSlackMessageFromEvent(event, configMap, jiraBotReplyFormat)
-            val channel = session.findChannelById(event.sourceId)
+            val channel = session.findChannelById(event.source.sourceId)
             preparedMessage.forEach {
-                session.sendMessage(channel, it)
+                sendSlackMessage(channel, it)
             }
+        }
+
+        fun sendSlackMessage(channel: SlackChannel, preparedMessage: SlackPreparedMessage): SlackMessageHandle<SlackMessageReply> {
+            return session.sendMessage(channel, preparedMessage)
         }
     })
 
@@ -129,7 +151,7 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
             return@SlackMessagePostedListener // filter own messages, especially not to match own replies indefinitely
 
         with(event) {
-            bot.handleChatMessage(messageContent, channel.id, user.id)
+            bot.handleChatMessage(messageContent, EventSourceData(channel.id, user.id, timeStamp, threadTimestamp))
         }
     })
 

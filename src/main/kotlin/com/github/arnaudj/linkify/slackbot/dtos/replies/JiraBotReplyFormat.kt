@@ -1,4 +1,4 @@
-package com.github.arnaudj.linkify.slackbot.eventdriven.mappers
+package com.github.arnaudj.linkify.slackbot.dtos.replies
 
 enum class JiraBotReplyFormat {
     SHORT,

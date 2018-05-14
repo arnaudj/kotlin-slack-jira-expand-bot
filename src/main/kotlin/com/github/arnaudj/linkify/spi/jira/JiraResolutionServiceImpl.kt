@@ -10,7 +10,7 @@ class JiraResolutionServiceImpl(
 
     val jiraIssueBrowseURL = configMap[ConfigurationConstants.jiraBrowseIssueBaseUrl] as String
     val jiraRestServiceBaseUrl = configMap[ConfigurationConstants.jiraRestServiceBaseUrl] as String
-    val resolveViaAPI = !(configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String).isEmpty()
+    val resolveViaAPI = !(configMap[ConfigurationConstants.jiraRestServiceBaseUrl] as String).isEmpty() && !(configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String).isEmpty()
 
     override fun resolve(jiraId: String): JiraEntity {
         val entity = if (resolveViaAPI)

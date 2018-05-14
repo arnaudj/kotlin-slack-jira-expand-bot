@@ -2,11 +2,12 @@ package com.github.arnaudj.linkify.slackbot
 
 import com.github.arnaudj.linkify.eventdriven.commands.Command
 import com.github.arnaudj.linkify.eventdriven.events.Event
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyFormat
 import com.github.arnaudj.linkify.slackbot.eventdriven.JiraEventFactory
 import com.github.arnaudj.linkify.slackbot.eventdriven.commands.ResolveJiraCommand
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
-import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraBotReplyFormat
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperExtendedReply
 import com.github.arnaudj.linkify.slackbot.eventdriven.mappers.JiraResolvedEventMapperShortReply
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
@@ -27,7 +28,7 @@ interface AppEventHandler {
     fun onJiraResolvedEvent(event: JiraResolvedEvent, bot: BotFacade, kodein: Kodein)
 
     fun doDefaultOnJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
-        bot.postBusCommand(ResolveJiraCommand(event.entity.key, event.sourceId, kodein))
+        bot.postBusCommand(ResolveJiraCommand(event.entity.key, event.source, kodein))
     }
 }
 
@@ -44,11 +45,10 @@ class BotFacade(val kodein: Kodein, workerPoolSize: Int, val appEventHandler: Ap
             MoreExecutors.listeningDecorator(MoreExecutors.newDirectExecutorService())
     }
 
-    fun handleChatMessage(message: String, sourceId: String, userId: String) =
+    fun handleChatMessage(message: String, source: EventSourceData) =
             arrayOf(JiraEventFactory())
-                    .flatMap { factory -> factory.createFrom(message, sourceId, userId) }
+                    .flatMap { factory -> factory.createFrom(message, source) }
                     .forEach { event -> postBusEvent(event) }
-
 
     @Subscribe
     fun onResolveJiraCommand(event: ResolveJiraCommand) {
@@ -57,7 +57,7 @@ class BotFacade(val kodein: Kodein, workerPoolSize: Int, val appEventHandler: Ap
 
         Futures.addCallback(future, object : FutureCallback<JiraEntity> {
             override fun onSuccess(result: JiraEntity?) {
-                postBusEvent(JiraResolvedEvent(event.sourceId, result!!))
+                postBusEvent(JiraResolvedEvent(event.source, result!!))
             }
 
             override fun onFailure(t: Throwable?) {
@@ -102,5 +102,7 @@ class BotFacade(val kodein: Kodein, workerPoolSize: Int, val appEventHandler: Ap
                 else -> error("Unsupported event type")
             }
         }
+
+        fun createConfigMap(config: Map<String, Any>): Map<String, Any> = config
     }
 }

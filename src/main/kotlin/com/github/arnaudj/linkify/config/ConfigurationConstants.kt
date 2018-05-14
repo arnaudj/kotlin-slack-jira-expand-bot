@@ -5,4 +5,6 @@ object ConfigurationConstants {
     val jiraRestServiceBaseUrl: String = "jira.rest.service.base.url"
     val jiraRestServiceAuthUser: String = "jira.rest.service.auth.user"
     val jiraRestServiceAuthPassword: String = "jira.rest.service.auth.password"
+
+    val jiraReferenceBotReplyMode: String = "jira.ref.bot.replymode"
 }
