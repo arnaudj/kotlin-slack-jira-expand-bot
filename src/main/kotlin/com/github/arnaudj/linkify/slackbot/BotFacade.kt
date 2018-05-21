@@ -92,6 +92,7 @@ class BotFacade(val kodein: Kodein, workerPoolSize: Int, val appEventHandler: Ap
     }
 
     companion object BotFacade {
+        @JvmStatic
         fun createSlackMessageFromEvent(event: Event, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat): List<SlackPreparedMessage> {
             return when (event) {
                 is JiraResolvedEvent ->
@@ -103,6 +104,7 @@ class BotFacade(val kodein: Kodein, workerPoolSize: Int, val appEventHandler: Ap
             }
         }
 
+        @JvmStatic
         fun createConfigMap(config: Map<String, Any>): Map<String, Any> = config
     }
 }
