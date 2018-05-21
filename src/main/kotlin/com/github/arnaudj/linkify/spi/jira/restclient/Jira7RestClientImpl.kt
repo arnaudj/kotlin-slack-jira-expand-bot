@@ -2,9 +2,13 @@ package com.github.arnaudj.linkify.spi.jira.restclient
 
 import com.github.arnaudj.linkify.config.ConfigurationConstants
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
+import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import okhttp3.*
+import okhttp3.Credentials
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 // For Jira 7.2.x - https://docs.atlassian.com/jira/REST/7.2.3/
 open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
@@ -57,27 +61,35 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
         val key = getStringOptional(json, "key", "")
 
         val fieldsMap = mutableMapOf<String, Any>()
-        if (json.has("fields")) {
+        if (json.hasNotNull("fields")) {
             val fields = json.getAsJsonObject("fields")
             fieldsMap["summary"] = getStringOptional(fields, "summary", "")
 
             fieldsMap["created"] = getStringOptional(fields, "created", "")
             fieldsMap["updated"] = getStringOptional(fields, "updated", "")
 
-            if (fields.has("status"))
+            if (fields.hasNotNull("status"))
                 fieldsMap["status.name"] = getStringOptional(fields.getAsJsonObject("status"), "name", "")
 
-            if (fields.has("priority"))
+            if (fields.hasNotNull("priority"))
                 fieldsMap["priority.name"] = getStringOptional(fields.getAsJsonObject("priority"), "name", "")
 
-            if (fields.has("reporter"))
+            if (fields.hasNotNull("reporter"))
                 fieldsMap["reporter.name"] = getStringOptional(fields.getAsJsonObject("reporter"), "name", "")
 
-            if (fields.has("assignee"))
+            if (fields.hasNotNull("assignee"))
                 fieldsMap["assignee.name"] = getStringOptional(fields.getAsJsonObject("assignee"), "name", "")
         }
 
         return JiraEntity(key, jiraIssueBrowseURL, summary, fieldsMap)
+    }
+
+    private fun JsonObject.hasNotNull(name: String): Boolean {
+        if (!has(name))
+            return false
+
+        val value = get(name)
+        return value != null && value !is JsonNull
     }
 
     private fun getStringOptional(json: JsonObject, name: String, defaultValue: String): String {
