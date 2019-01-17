@@ -10,7 +10,7 @@ You will obtain a bot access token that is needed below.
 
 Then run the bot:
 
-`kotlin-slack-jira-aliaser-bot.jar -jia http://MY-JIRA-URL-HERE/ -t BOT_AUTH_TOKEN_HERE (-p proxyhostifany:port)`
+`java -jar jirabot.jar -jia http://MY-JIRA-URL-HERE/ -t BOT_AUTH_TOKEN_HERE (-p proxyhostifany:port) (-u jirauserifneeded:jirapwd)`
 
 * Option -jia will be used as base address when expanding links
 * Option -t specifies the bot authentication token (cf first step)

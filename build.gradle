@@ -1,21 +1,25 @@
-group 'com.github.arnaudj'
-version '0.9.0-SNAPSHOT'
-
 buildscript {
     ext.kotlin_version = '1.2.41'
 
     repositories {
         mavenCentral()
+        jcenter()
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
     }
 }
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'application'
 apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: 'groovy'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+group 'com.github.arnaudj'
+version '0.9.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -23,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile 'com.github.Ullink:simple-slack-api:d3fe7de81118a72dcf9254b78e96252b5ae64cd1'
     compile 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
     compile 'com.googlecode.json-simple:json-simple:1.1'
@@ -40,4 +44,15 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.codehaus.groovy:groovy-all:2.4.10'
     testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
+}
+
+application {
+    mainClassName = 'com.github.arnaudj.linkify.slackbot.SlackBotKt'
+}
+
+shadowJar {
+    configurations = [project.configurations.compile]
+    baseName = 'jirabot'
+    classifier = null
+    version = null
 }
