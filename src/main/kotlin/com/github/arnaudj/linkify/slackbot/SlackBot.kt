@@ -147,8 +147,8 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     session.addMessagePostedListener(SlackMessagePostedListener { event, _ ->
         //if (event.channelId.id != session.findChannelByName("thechannel").id) return // target per channelId
         //if (event.sender.id != session.findUserByUserName("gueststar").id) return // target per user
-        if (session.sessionPersona().id == event.sender.id)
-            return@SlackMessagePostedListener // filter own messages, especially not to match own replies indefinitely
+        if (session.sessionPersona().id == event.sender.id || event?.user?.isBot == true)
+            return@SlackMessagePostedListener // filter own and 3rd party bot messages
 
         with(event) {
             bot.handleChatMessage(messageContent, EventSourceData(channel.id, user.id, timeStamp, threadTimestamp))
