@@ -10,6 +10,7 @@ import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyFormat
 import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
+import com.github.arnaudj.linkify.spi.jira.JiraKeyType
 import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.SlackChannel
 import com.ullink.slack.simpleslackapi.SlackMessageHandle
@@ -22,6 +23,7 @@ import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
 import java.net.Proxy
+import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
 
@@ -124,9 +126,12 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     val kodein = Kodein {
         import(SlackbotModule.getInjectionBindings(configMap))
     }
+    val jiraKeyToLastSeen: MutableMap<JiraKeyType, Long> = mutableMapOf()
     val bot = BotFacade(kodein, 10, object : AppEventHandler {
+        private val throttlingDelayMinutes = 2L
+
         override fun onJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
-            // TODO Throttling
+            if (shouldThrottle(event)) return
             doDefaultOnJiraSeenEvent(event, bot, kodein)
         }
 
@@ -141,6 +146,14 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
 
         fun sendSlackMessage(channel: SlackChannel, preparedMessage: SlackPreparedMessage): SlackMessageHandle<SlackMessageReply> {
             return session.sendMessage(channel, preparedMessage)
+        }
+
+        private fun shouldThrottle(event: JiraSeenEvent): Boolean {
+            val now = System.currentTimeMillis()
+            val key = event.entity.key
+            val ret = (now - jiraKeyToLastSeen.getOrDefault(key, 0)) < TimeUnit.MINUTES.toMillis(throttlingDelayMinutes)
+            jiraKeyToLastSeen[key] = now
+            return ret
         }
     })
 
