@@ -8,7 +8,7 @@ import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import java.util.regex.Pattern
 
 class JiraEventFactory : InboundMessageEventFactory {
-    val pattern: Pattern = Pattern.compile("([A-Za-z]{4,7}-\\d{1,5})+")
+    val pattern: Pattern = Pattern.compile("([A-Za-z]{2,7}-\\d{1,5})+")
 
     override fun createFrom(message: String, source: EventSourceData): List<Event> {
         return extractJiraIssueReferences(message).map { key ->
