@@ -1,7 +1,0 @@
-Next
-    TODO: throttling com.github.arnaudj.linkify.slackbot.AppEventHandler.onJiraSeenEvent
-
-JiraResolvedEventMapper: include author avatar (fields.reporter.avatarUrls))
-Use injector to fetch configuration per token
-Use external configuration (jira host, token, watched jira project keys)
-Simple slack API: allow to set ts field of an attachment, ex: https://api.slack.com/docs/message-attachments

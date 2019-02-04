@@ -2,7 +2,8 @@ image:https://travis-ci.org/arnaudj/kotlin-slack-jira-expand-bot.svg?branch=mast
 
 A Slack bot that automatically provides a link to JIRA issues written in channels.
 
-
+== Demo
+image:https://raw.github.com/arnaudj/kotlin-slack-jira-expand-bot/master/res/static/sample.png[]
 
 == How to use
 First, create a new bot user on your Slack team, please read https://api.slack.com/bot-users[Slack bot users].
@@ -10,14 +11,15 @@ You will obtain a bot access token that is needed below.
 
 Then run the bot:
 
-`java -jar jirabot.jar -jia http://MY-JIRA-URL-HERE/ -t BOT_AUTH_TOKEN_HERE (-p proxyhostifany:port) (-u jirauserifneeded:jirapwd)`
+`java -jar jirabot.jar -jia http://MY-JIRA-URL-HERE/browse -jrs http://MY-JIRA-URL-HERE -t BOT_AUTH_TOKEN_HERE (-p proxyhostifany:port) (-u jirauserifneeded:jirapwd)`
 
 * Option -jia will be used as base address when expanding links
+* Option -jrs will be used as Jira REST API endpoint
+* Option -jfmt and -jmode control display
 * Option -t specifies the bot authentication token (cf first step)
 * Option -p allow to specify an http(s) proxy, if needed
 
-For more options, run bot with -h.
-
+For more info, run bot with -h.
 
 == Misc
 Slack access thanks to the https://github.com/Ullink/simple-slack-api[Simple Slack API].
