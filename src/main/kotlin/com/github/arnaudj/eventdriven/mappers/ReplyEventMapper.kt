@@ -1,4 +1,4 @@
-package com.github.arnaudj.linkify.eventdriven.mappers
+package com.github.arnaudj.eventdriven.mappers
 
 
 interface ReplyEventMapper<in T, out O> {

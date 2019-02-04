@@ -1,8 +1,8 @@
-package com.github.arnaudj.linkify.slackbot.eventdriven.mappers
+package com.github.arnaudj.linkify.jiraengine.eventdriven.mappers
 
 import com.github.arnaudj.linkify.config.ConfigurationConstants
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
+import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 

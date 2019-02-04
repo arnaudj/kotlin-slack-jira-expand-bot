@@ -1,4 +1,4 @@
-import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.eventdriven.events.EventSourceData
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import org.junit.Assert
 import org.junit.Test
@@ -6,7 +6,7 @@ import org.junit.Test
 
 class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
     fun receiveChatMessage(message: String, channel: String, user: String) {
-        bot.handleChatMessage(message, EventSourceData( channel, user, "fakeTimestamp", null))
+        bot.handleChatMessage(message, EventSourceData(channel, user, "fakeTimestamp", null))
     }
 
     @Test
@@ -36,16 +36,13 @@ class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
     }
 
     private fun `given malformed jira reference bot says nothing`() {
-        receiveChatMessage("DEC-2050", "chan1", "user1")
-        Assert.assertTrue(replies.isEmpty())
-
-        receiveChatMessage("dec-2050", "chan1", "user1")
+        receiveChatMessage("1900-BC", "chan1", "user1")
         Assert.assertTrue(replies.isEmpty())
 
         receiveChatMessage("DEC - 2017", "chan1", "user1")
         Assert.assertTrue(replies.isEmpty())
 
-        receiveChatMessage("2017-2020", "chan1", "user1")
+        receiveChatMessage("2019-2020", "chan1", "user1")
         Assert.assertTrue(replies.isEmpty())
     }
 
@@ -80,6 +77,26 @@ class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
         receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
         assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>",
                 "<$jiraBrowseIssueBaseUrl/PROD-42|PROD-42>"), replies)
+    }
+
+    @Test
+    fun `(with jira API, throttling) given 1 jira reference in 2 nearby messages bot provides only 1 jira link`() {
+        setupObjects(true)
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
+        receiveChatMessage("Some chat", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm2")
+        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`"), replies)
+    }
+
+    @Test
+    fun `(no jira API, throttling) given 1 jira reference in 2 nearby messages bot provides only 1 jira link`() {
+        setupObjects(false)
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
+        receiveChatMessage("Some chat", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm2")
+        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>"), replies)
     }
 
     fun assertMessagesEquals(a: List<SlackPreparedMessage>, b: List<SlackPreparedMessage>) {

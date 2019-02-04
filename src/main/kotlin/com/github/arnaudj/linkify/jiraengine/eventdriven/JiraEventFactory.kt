@@ -1,9 +1,9 @@
-package com.github.arnaudj.linkify.slackbot.eventdriven
+package com.github.arnaudj.linkify.jiraengine.eventdriven
 
-import com.github.arnaudj.linkify.eventdriven.commands.InboundMessageEventFactory
-import com.github.arnaudj.linkify.eventdriven.events.Event
-import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
+import com.github.arnaudj.eventdriven.commands.InboundMessageEventFactory
+import com.github.arnaudj.eventdriven.events.Event
+import com.github.arnaudj.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraSeenEvent
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import java.util.regex.Pattern
 

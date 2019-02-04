@@ -10,7 +10,7 @@ import com.github.salomonbrys.kodein.instance
 import com.github.salomonbrys.kodein.singleton
 
 class SlackbotModule {
-    companion object SlackbotModule {
+    companion object {
         fun getInjectionBindings(configMap: Map<String, Any>): Kodein.Module {
             return Kodein.Module {
                 bind<JiraRestClient>() with singleton { Jira7RestClientImpl(configMap) }

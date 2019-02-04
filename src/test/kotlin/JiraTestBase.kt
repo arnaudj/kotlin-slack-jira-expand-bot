@@ -1,6 +1,6 @@
 import com.github.arnaudj.linkify.config.ConfigurationConstants
-import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
+import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createConfigMap
 
 open class JiraTestBase {
     val jiraBrowseIssueBaseUrl = "http://localhost/browse"
@@ -11,7 +11,7 @@ open class JiraTestBase {
     lateinit var configMap: Map<String, Any>
 
     fun setupConfigMap(jiraResolveWithAPI: Boolean, jiraJiraBotBotReplyMode: JiraBotReplyMode) {
-        configMap = BotFacade.createConfigMap(mapOf(
+        configMap = createConfigMap(mapOf(
                 ConfigurationConstants.jiraBrowseIssueBaseUrl to jiraBrowseIssueBaseUrl,
                 ConfigurationConstants.jiraRestServiceBaseUrl to jiraRestServiceBaseUrl,
                 ConfigurationConstants.jiraRestServiceAuthUser to if (jiraResolveWithAPI) jiraAuthUser else "",

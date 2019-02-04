@@ -1,10 +1,10 @@
-import com.github.arnaudj.linkify.slackbot.AppEventHandler
+import com.github.arnaudj.linkify.jiraengine.AppEventHandler
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyFormat
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
+import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.github.arnaudj.linkify.slackbot.SlackbotModule
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyFormat
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
+import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createSlackMessageFromEvent
+import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings
 import com.github.arnaudj.linkify.spi.jira.restclient.Jira7RestClientImpl
 import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 import com.github.salomonbrys.kodein.Kodein
@@ -28,18 +28,15 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
     fun setupObjects(jiraResolveWithAPI: Boolean, jiraBotReplyMode: JiraBotReplyMode = JiraBotReplyMode.INLINE) {
         setupConfigMap(jiraResolveWithAPI, jiraBotReplyMode)
         kodein = Kodein {
-            import(SlackbotModule.getInjectionBindings(configMap))
+            import(getInjectionBindings(configMap))
             if (jiraResolveWithAPI)
                 bind<JiraRestClient>(overrides = true) with singleton { StubbedJiraRestClient(mockReplies, configMap) }
         }
 
         bot = BotFacade(kodein, -1, object : AppEventHandler {
-            override fun onJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
-                doDefaultOnJiraSeenEvent(event, bot, kodein)
-            }
-
-            override fun onJiraResolvedEvent(event: JiraResolvedEvent, bot: BotFacade, kodein: Kodein) {
-                BotFacade.createSlackMessageFromEvent(event, configMap, JiraBotReplyFormat.SHORT).forEach {
+            override fun onJiraResolvedEvent(event: JiraResolvedEvent, kodein: Kodein) {
+                val preparedMessage: List<SlackPreparedMessage> = createSlackMessageFromEvent(event, configMap, JiraBotReplyFormat.SHORT)
+                preparedMessage.forEach {
                     replies.add(it)
                 }
             }

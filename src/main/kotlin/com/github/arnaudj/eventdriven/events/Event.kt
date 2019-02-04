@@ -1,4 +1,4 @@
-package com.github.arnaudj.linkify.eventdriven.events
+package com.github.arnaudj.eventdriven.events
 
 data class EventSourceData(val sourceId: String, val userId: String, val timestamp: String, val threadId: String?)
 

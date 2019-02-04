@@ -1,7 +1,7 @@
-package com.github.arnaudj.linkify.slackbot.eventdriven.mappers
+package com.github.arnaudj.linkify.jiraengine.eventdriven.mappers
 
-import com.github.arnaudj.linkify.eventdriven.mappers.ReplyEventMapper
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.eventdriven.mappers.ReplyEventMapper
+import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 

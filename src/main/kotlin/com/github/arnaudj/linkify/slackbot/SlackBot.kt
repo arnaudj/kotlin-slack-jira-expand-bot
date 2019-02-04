@@ -1,16 +1,17 @@
 package com.github.arnaudj.linkify.slackbot
 
+import com.github.arnaudj.eventdriven.events.EventSourceData
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraBrowseIssueBaseUrl
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraReferenceBotReplyMode
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthPassword
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
-import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyFormat
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraSeenEvent
-import com.github.arnaudj.linkify.spi.jira.JiraKeyType
+import com.github.arnaudj.linkify.jiraengine.AppEventHandler
+import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyFormat
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
+import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createSlackMessageFromEvent
 import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.SlackChannel
 import com.ullink.slack.simpleslackapi.SlackMessageHandle
@@ -23,7 +24,6 @@ import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
 import java.net.Proxy
-import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
 
@@ -124,20 +124,13 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     println("* Using jira references reply mode: $jiraReferencesReplyMode")
 
     val kodein = Kodein {
-        import(SlackbotModule.getInjectionBindings(configMap))
+        import(getInjectionBindings(configMap))
     }
-    val jiraKeyToLastSeen: MutableMap<JiraKeyType, Long> = mutableMapOf()
+
     val bot = BotFacade(kodein, 10, object : AppEventHandler {
-        private val throttlingDelayMinutes = 2L
-
-        override fun onJiraSeenEvent(event: JiraSeenEvent, bot: BotFacade, kodein: Kodein) {
-            if (shouldThrottle(event)) return
-            doDefaultOnJiraSeenEvent(event, bot, kodein)
-        }
-
-        override fun onJiraResolvedEvent(event: JiraResolvedEvent, bot: BotFacade, kodein: Kodein) {
+        override fun onJiraResolvedEvent(event: JiraResolvedEvent, kodein: Kodein) {
             println("* bot: $event")
-            val preparedMessage: List<SlackPreparedMessage> = BotFacade.createSlackMessageFromEvent(event, configMap, jiraBotReplyFormat)
+            val preparedMessage: List<SlackPreparedMessage> = createSlackMessageFromEvent(event, configMap, jiraBotReplyFormat)
             val channel = session.findChannelById(event.source.sourceId)
             preparedMessage.forEach {
                 sendSlackMessage(channel, it)
@@ -146,14 +139,6 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
 
         fun sendSlackMessage(channel: SlackChannel, preparedMessage: SlackPreparedMessage): SlackMessageHandle<SlackMessageReply> {
             return session.sendMessage(channel, preparedMessage)
-        }
-
-        private fun shouldThrottle(event: JiraSeenEvent): Boolean {
-            val now = System.currentTimeMillis()
-            val key = event.entity.key
-            val ret = (now - jiraKeyToLastSeen.getOrDefault(key, 0)) < TimeUnit.MINUTES.toMillis(throttlingDelayMinutes)
-            jiraKeyToLastSeen[key] = now
-            return ret
         }
     })
 

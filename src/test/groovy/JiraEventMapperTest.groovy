@@ -1,9 +1,9 @@
 import com.github.arnaudj.linkify.config.ConfigurationConstants
-import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyFormat
+import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
+import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyFormat
-import com.github.arnaudj.linkify.slackbot.dtos.replies.JiraBotReplyMode
-import com.github.arnaudj.linkify.slackbot.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.spi.jira.JiraEntity
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import spock.lang.Specification
