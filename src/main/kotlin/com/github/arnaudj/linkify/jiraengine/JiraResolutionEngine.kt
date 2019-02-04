@@ -16,6 +16,7 @@ import com.google.common.eventbus.DeadEvent
 import com.google.common.eventbus.EventBus
 import com.google.common.eventbus.Subscribe
 import com.google.common.util.concurrent.*
+import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -30,6 +31,7 @@ interface JiraEngineThrottlingStrategy {
 }
 
 class JiraResolutionEngine(private val kodein: Kodein, workerPoolSize: Int, private val appEventHandler: AppEventHandler, private val jiraEngineThrottlingStrategy: JiraEngineThrottlingStrategy) {
+    private val logger = LoggerFactory.getLogger(JiraResolutionEngine::class.java)
     private val eventBus: EventBus = EventBus()
     private val jiraService: JiraResolutionService = kodein.instance()
     private val workerPool: ListeningExecutorService
@@ -49,7 +51,7 @@ class JiraResolutionEngine(private val kodein: Kodein, workerPoolSize: Int, priv
 
     @Subscribe
     fun onResolveJiraCommand(event: ResolveJiraCommand) {
-        println("onResolveJiraCommand() handling ${event}")
+        logger.debug("onResolveJiraCommand() handling ${event}")
         val future: ListenableFuture<JiraEntity>? = workerPool.submit(Callable<JiraEntity> { jiraService.resolve(event.key) })
 
         Futures.addCallback(future, object : FutureCallback<JiraEntity> {
@@ -58,8 +60,7 @@ class JiraResolutionEngine(private val kodein: Kodein, workerPoolSize: Int, priv
             }
 
             override fun onFailure(t: Throwable?) {
-                System.err.println("Unable to resolve for event: $event")
-                t?.printStackTrace()
+                logger.error("Unable to resolve for event: $event", t)
             }
         }, workerPool)
     }
@@ -80,12 +81,12 @@ class JiraResolutionEngine(private val kodein: Kodein, workerPoolSize: Int, priv
     }
 
     private fun postBusCommand(command: Command) {
-        println("> postBusCommand: ${command}")
+        logger.debug("> postBusCommand: ${command}")
         eventBus.post(command)
     }
 
     private fun postBusEvent(event: Event) {
-        println("> postBusEvent: ${event}")
+        logger.debug("> postBusEvent: ${event}")
         eventBus.post(event)
     }
 

@@ -7,11 +7,11 @@ import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceA
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
 import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
 import com.github.arnaudj.linkify.jiraengine.AppEventHandler
-import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings
 import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyFormat
 import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
 import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createSlackMessageFromEvent
+import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings
 import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.SlackChannel
 import com.ullink.slack.simpleslackapi.SlackMessageHandle
@@ -23,7 +23,10 @@ import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
+import org.slf4j.LoggerFactory
 import java.net.Proxy
+
+val logger = LoggerFactory.getLogger("SlackBot")
 
 fun main(args: Array<String>) {
 
@@ -44,7 +47,6 @@ fun main(args: Array<String>) {
         return
     }
 
-    System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
     val proxy = cmdLine.getOptionValue("p")
     val (jiraUser, jiraPassword) = extractJiraCredentials(cmdLine)
     val jiraBotRepliesFormat = extractEnumOption(cmdLine, "jfmt", { JiraBotReplyFormat.valueOf(it) }) as JiraBotReplyFormat
@@ -109,19 +111,18 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
         withAutoreconnectOnDisconnection(true)
 
         proxy?.let {
-            println("* Using proxy: $it")
+            logger.info("Using proxy: $it")
             val elmt = it.split(":", limit = 2)
             require(elmt.size == 2, { "malformed proxy" })
             withProxy(Proxy.Type.HTTP, elmt[0], elmt[1].toInt())
         }
     }.build()
 
-    println("* Using bot configuration: ${configMap.toList().filter { it.first != jiraRestServiceAuthPassword }.toMap()}")
+    logger.info("Using bot configuration: ${configMap.toList().filter { it.first != jiraRestServiceAuthPassword }.toMap()}")
     if ((configMap[jiraRestServiceBaseUrl] as String).isEmpty() || (configMap[jiraRestServiceAuthUser] as String).isEmpty())
-        println("* Jira resolution with API is disabled!")
+        logger.info("Jira resolution with API is disabled!")
 
     val jiraReferencesReplyMode = configMap[jiraReferenceBotReplyMode] as JiraBotReplyMode
-    println("* Using jira references reply mode: $jiraReferencesReplyMode")
 
     val kodein = Kodein {
         import(getInjectionBindings(configMap))
@@ -129,7 +130,6 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
 
     val bot = BotFacade(kodein, 10, object : AppEventHandler {
         override fun onJiraResolvedEvent(event: JiraResolvedEvent, kodein: Kodein) {
-            println("* bot: $event")
             val preparedMessage: List<SlackPreparedMessage> = createSlackMessageFromEvent(event, configMap, jiraBotReplyFormat)
             val channel = session.findChannelById(event.source.sourceId)
             preparedMessage.forEach {
@@ -154,6 +154,6 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     })
 
     session.connect()
-    println("* Session connected")
+    logger.info("Session connected")
 }
 

@@ -9,10 +9,11 @@ import okhttp3.Credentials
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.slf4j.LoggerFactory
 
 // For Jira 7.2.x - https://docs.atlassian.com/jira/REST/7.2.3/
 open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
-
+    private val logger = LoggerFactory.getLogger(Jira7RestClientImpl::class.java)
     val jiraAuthUser = configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String
     val jiraAuthPwd = configMap[ConfigurationConstants.jiraRestServiceAuthPassword] as String
 
@@ -32,14 +33,17 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
                     .get().build()
 
             val client = createClientBuilder().build()
-            println("> [jira client] Request: $request")
+            logger.info("> Request: $request")
 
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful)
+                logger.info("< Reply code ${response.code()}")
+
+                if (!response.isSuccessful) {
                     return JiraEntity(jiraId, jiraIssueBrowseURL, "Http call unsuccessful: ${response.code()}: ${response.message()}")
+                }
 
                 val payload = response.body()?.string() ?: ""
-                println("< [jira client] Reply: ###$payload###")
+                logger.debug("< Reply: ###$payload###")
 
                 return if (payload.isEmpty())
                     JiraEntity(jiraId, jiraIssueBrowseURL, "Empty reply")
