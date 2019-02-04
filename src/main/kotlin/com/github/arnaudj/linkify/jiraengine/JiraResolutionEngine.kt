@@ -25,12 +25,14 @@ interface AppEventHandler {
     fun onJiraResolvedEvent(event: JiraResolvedEvent, kodein: Kodein)
 }
 
-class JiraResolutionEngine(val kodein: Kodein, workerPoolSize: Int, val appEventHandler: AppEventHandler) {
-    private val throttlingDelayMinutes = 2L
-    val eventBus: EventBus = EventBus()
-    val jiraService: JiraResolutionService = kodein.instance()
-    val workerPool: ListeningExecutorService
-    val jiraKeyToLastSeen: MutableMap<JiraKeyType, Long> = mutableMapOf()
+interface JiraEngineThrottlingStrategy {
+    fun shouldThrottle(event: JiraSeenEvent): Boolean
+}
+
+class JiraResolutionEngine(private val kodein: Kodein, workerPoolSize: Int, private val appEventHandler: AppEventHandler, private val jiraEngineThrottlingStrategy: JiraEngineThrottlingStrategy) {
+    private val eventBus: EventBus = EventBus()
+    private val jiraService: JiraResolutionService = kodein.instance()
+    private val workerPool: ListeningExecutorService
 
     init {
         eventBus.register(this)
@@ -62,18 +64,10 @@ class JiraResolutionEngine(val kodein: Kodein, workerPoolSize: Int, val appEvent
         }, workerPool)
     }
 
-    private fun shouldThrottle(event: JiraSeenEvent): Boolean {
-        val now = System.currentTimeMillis()
-        val key = event.entity.key
-        val ret = (now - jiraKeyToLastSeen.getOrDefault(key, 0)) < TimeUnit.MINUTES.toMillis(throttlingDelayMinutes)
-        jiraKeyToLastSeen[key] = now
-        return ret
-    }
-
     @Subscribe
     fun onEvent(event: Event) {
         when (event) {
-            is JiraSeenEvent -> if (!shouldThrottle(event))
+            is JiraSeenEvent -> if (!jiraEngineThrottlingStrategy.shouldThrottle(event))
                 postBusCommand(ResolveJiraCommand(event.entity.key, event.source, kodein))
             is JiraResolvedEvent -> appEventHandler.onJiraResolvedEvent(event, kodein)
             else -> error("Unsupported event in bot: $event")
@@ -85,12 +79,12 @@ class JiraResolutionEngine(val kodein: Kodein, workerPoolSize: Int, val appEvent
         error("Unexpected dead event: $event")
     }
 
-    fun postBusCommand(command: Command) {
+    private fun postBusCommand(command: Command) {
         println("> postBusCommand: ${command}")
         eventBus.post(command)
     }
 
-    fun postBusEvent(event: Event) {
+    private fun postBusEvent(event: Event) {
         println("> postBusEvent: ${event}")
         eventBus.post(event)
     }

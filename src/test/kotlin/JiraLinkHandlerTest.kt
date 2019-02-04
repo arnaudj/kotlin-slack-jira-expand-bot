@@ -5,6 +5,11 @@ import org.junit.Test
 
 
 class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
+    val expectedReplyNoJiraAPI_JIRA1234 = "<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>"
+    val expectedReplyWithJiraAPI_JIRA1234 = "$expectedReplyNoJiraAPI_JIRA1234 `A subtask with some summary here`"
+    val expectedReplyNoJiraAPI_PROD42 = "<$jiraBrowseIssueBaseUrl/PROD-42|PROD-42>"
+    val expectdReplyWithJiraAPI_PROD42 = "$expectedReplyNoJiraAPI_PROD42 `Another summary here available in fields`"
+
     fun receiveChatMessage(message: String, channel: String, user: String) {
         bot.handleChatMessage(message, EventSourceData(channel, user, "fakeTimestamp", null))
     }
@@ -53,55 +58,76 @@ class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
     fun `(with jira API) given 1 jira reference bot provides 1 jira link`() {
         setupObjects(true)
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
-        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`"), replies)
+        assertMessagesEquals(buildMessages(expectedReplyWithJiraAPI_JIRA1234), replies)
     }
 
     @Test
     fun `(no jira API) given 1 jira reference bot provides 1 jira link`() {
         setupObjects(false)
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
-        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>"), replies)
+        assertMessagesEquals(buildMessages(expectedReplyNoJiraAPI_JIRA1234), replies)
     }
 
     @Test
     fun `(with jira API) given 2 jira references bot provides 2 jira links`() {
         setupObjects(true)
         receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
-        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`",
-                "<$jiraBrowseIssueBaseUrl/PROD-42|PROD-42> `Another summary here available in fields`"), replies)
+        assertMessagesEquals(buildMessages(expectedReplyWithJiraAPI_JIRA1234, expectdReplyWithJiraAPI_PROD42), replies)
     }
 
     @Test
     fun `(no jira API) given 2 jira references bot provides 2 jira links`() {
         setupObjects(false)
         receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
-        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>",
-                "<$jiraBrowseIssueBaseUrl/PROD-42|PROD-42>"), replies)
+        assertMessagesEquals(buildMessages(expectedReplyNoJiraAPI_JIRA1234, expectedReplyNoJiraAPI_PROD42), replies)
     }
 
     @Test
-    fun `(with jira API, throttling) given 1 jira reference in 2 nearby messages bot provides only 1 jira link`() {
+    fun `(with jira API, throttling) given 1 jira reference in 2 nearby messages on same channel bot provides only 1 jira link`() {
         setupObjects(true)
-        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
-        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
-        receiveChatMessage("Some chat", "chan1", "pm1")
-        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm2")
-        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`"), replies)
+        `throttling given 1 jira reference in 2 nearby messages on same channel bot provides only 1 jira link`()
+        assertMessagesEquals(buildMessages(expectedReplyWithJiraAPI_JIRA1234), replies)
     }
 
     @Test
-    fun `(no jira API, throttling) given 1 jira reference in 2 nearby messages bot provides only 1 jira link`() {
+    fun `(no jira API, throttling) given 1 jira reference in 2 nearby messages  on same channel bot provides only 1 jira link`() {
         setupObjects(false)
+        `throttling given 1 jira reference in 2 nearby messages on same channel bot provides only 1 jira link`()
+        assertMessagesEquals(buildMessages(expectedReplyNoJiraAPI_JIRA1234), replies)
+    }
+
+    private fun `throttling given 1 jira reference in 2 nearby messages on same channel bot provides only 1 jira link`() {
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
         receiveChatMessage("Some chat", "chan1", "pm1")
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm2")
-        assertMessagesEquals(buildMessages("<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234>"), replies)
     }
 
-    fun assertMessagesEquals(a: List<SlackPreparedMessage>, b: List<SlackPreparedMessage>) {
-        val a2 = a.map { it.toString() }
-        val b2 = b.map { it.toString() }
-        Assert.assertArrayEquals(a2.toTypedArray(), b2.toTypedArray())
+    @Test
+    fun `(with jira API, throttling) given 1 jira reference in 2 nearby messages on 2 different channels bot replies twice`() {
+        setupObjects(true)
+        `throttling given 1 jira reference in 2 nearby messages on 2 different channels bot replies twice`()
+        assertMessagesEquals(buildMessages(expectedReplyWithJiraAPI_JIRA1234, expectedReplyWithJiraAPI_JIRA1234), replies)
+    }
+
+    @Test
+    fun `(no jira API, throttling) given 1 jira reference in 2 nearby messages on 2 different channels bot replies twice`() {
+        setupObjects(false)
+        `throttling given 1 jira reference in 2 nearby messages on 2 different channels bot replies twice`()
+        assertMessagesEquals(buildMessages(expectedReplyNoJiraAPI_JIRA1234, expectedReplyNoJiraAPI_JIRA1234), replies)
+    }
+
+    private fun `throttling given 1 jira reference in 2 nearby messages on 2 different channels bot replies twice`() {
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234?", "chan2", "pm1")
+        receiveChatMessage("Some chat", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm2")
+    }
+
+    fun assertMessagesEquals(expected: List<SlackPreparedMessage>, actual: List<SlackPreparedMessage>) {
+        val expected0 = expected.map { it.toString() }
+        val actual0 = actual.map { it.toString() }
+        val message = "Expected:\n$expected0\n\nActual:\n$actual0"
+        Assert.assertArrayEquals(message, expected0.toTypedArray(), actual0.toTypedArray())
     }
 }
