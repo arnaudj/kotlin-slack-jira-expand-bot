@@ -1,4 +1,4 @@
-import com.github.arnaudj.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import org.junit.Assert
 import org.junit.Test

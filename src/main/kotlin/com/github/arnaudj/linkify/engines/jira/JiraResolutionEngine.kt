@@ -1,14 +1,12 @@
-package com.github.arnaudj.linkify.jiraengine
+package com.github.arnaudj.linkify.engines.jira
 
-import com.github.arnaudj.eventdriven.commands.Command
-import com.github.arnaudj.eventdriven.events.Event
-import com.github.arnaudj.eventdriven.events.EventSourceData
-import com.github.arnaudj.linkify.jiraengine.eventdriven.JiraEventFactory
-import com.github.arnaudj.linkify.jiraengine.eventdriven.commands.ResolveJiraCommand
-import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
-import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraSeenEvent
-import com.github.arnaudj.linkify.spi.jira.JiraEntity
-import com.github.arnaudj.linkify.spi.jira.JiraKeyType
+import com.github.arnaudj.linkify.eventdriven.commands.Command
+import com.github.arnaudj.linkify.eventdriven.events.Event
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
+import com.github.arnaudj.linkify.engines.jira.entities.ResolveJiraCommand
+import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
+import com.github.arnaudj.linkify.engines.jira.entities.JiraSeenEvent
 import com.github.arnaudj.linkify.spi.jira.JiraResolutionService
 import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.instance
@@ -19,7 +17,6 @@ import com.google.common.util.concurrent.*
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 
 interface AppEventHandler {

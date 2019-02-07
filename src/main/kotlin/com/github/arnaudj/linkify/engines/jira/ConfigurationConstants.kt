@@ -1,4 +1,4 @@
-package com.github.arnaudj.linkify.config
+package com.github.arnaudj.linkify.engines.jira
 
 object ConfigurationConstants {
     val jiraBrowseIssueBaseUrl: String = "jira.issue.browse.base.url"

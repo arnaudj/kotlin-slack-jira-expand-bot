@@ -1,7 +1,7 @@
-import com.github.arnaudj.linkify.jiraengine.AppEventHandler
-import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyFormat
-import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
-import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.engines.jira.AppEventHandler
+import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyFormat
+import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyMode
+import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.BotFacade
 import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createSlackMessageFromEvent
 import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings

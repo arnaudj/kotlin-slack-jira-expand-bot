@@ -1,4 +1,4 @@
-package com.github.arnaudj.linkify.jiraengine.dtos.replies
+package com.github.arnaudj.linkify.engines.jira.entities
 
 enum class JiraBotReplyFormat {
     SHORT,

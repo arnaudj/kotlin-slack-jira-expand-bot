@@ -1,14 +1,14 @@
-package com.github.arnaudj.linkify.jiraengine.eventdriven
+package com.github.arnaudj.linkify.engines.jira
 
-import com.github.arnaudj.eventdriven.commands.InboundMessageEventFactory
-import com.github.arnaudj.eventdriven.events.Event
-import com.github.arnaudj.eventdriven.events.EventSourceData
-import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraSeenEvent
-import com.github.arnaudj.linkify.spi.jira.JiraEntity
+import com.github.arnaudj.linkify.eventdriven.commands.InboundMessageEventFactory
+import com.github.arnaudj.linkify.eventdriven.events.Event
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
+import com.github.arnaudj.linkify.engines.jira.entities.JiraSeenEvent
 import java.util.regex.Pattern
 
 class JiraEventFactory : InboundMessageEventFactory {
-    val pattern: Pattern = Pattern.compile("([A-Za-z]{2,7}-\\d{1,5})+")
+    val pattern: Pattern = Pattern.compile("[A-Z][A-Z0-9]{1,9}-\\d+")
 
     override fun createFrom(message: String, source: EventSourceData): List<Event> {
         return extractJiraIssueReferences(message).map { key ->

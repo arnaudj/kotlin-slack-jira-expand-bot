@@ -1,16 +1,16 @@
 package com.github.arnaudj.linkify.slackbot
 
-import com.github.arnaudj.eventdriven.events.Event
-import com.github.arnaudj.eventdriven.events.EventSourceData
-import com.github.arnaudj.linkify.jiraengine.AppEventHandler
-import com.github.arnaudj.linkify.jiraengine.JiraEngineThrottlingStrategy
-import com.github.arnaudj.linkify.jiraengine.JiraResolutionEngine
-import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyFormat
-import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
-import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraSeenEvent
-import com.github.arnaudj.linkify.jiraengine.eventdriven.mappers.JiraResolvedEventMapperExtendedReply
-import com.github.arnaudj.linkify.jiraengine.eventdriven.mappers.JiraResolvedEventMapperShortReply
-import com.github.arnaudj.linkify.spi.jira.JiraKeyType
+import com.github.arnaudj.linkify.eventdriven.events.Event
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.engines.jira.AppEventHandler
+import com.github.arnaudj.linkify.engines.jira.JiraEngineThrottlingStrategy
+import com.github.arnaudj.linkify.engines.jira.JiraResolutionEngine
+import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyFormat
+import com.github.arnaudj.linkify.engines.jira.entities.JiraKeyType
+import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
+import com.github.arnaudj.linkify.engines.jira.entities.JiraSeenEvent
+import com.github.arnaudj.linkify.slackbot.eventdriven.eventmappers.JiraResolvedEventMapperExtendedReply
+import com.github.arnaudj.linkify.slackbot.eventdriven.eventmappers.JiraResolvedEventMapperShortReply
 import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import java.util.concurrent.TimeUnit

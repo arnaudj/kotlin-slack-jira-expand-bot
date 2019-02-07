@@ -1,5 +1,5 @@
-import com.github.arnaudj.linkify.config.ConfigurationConstants
-import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants
+import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyMode
 import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createConfigMap
 
 open class JiraTestBase {

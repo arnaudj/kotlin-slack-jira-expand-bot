@@ -1,6 +1,7 @@
 package com.github.arnaudj.linkify.spi.jira
 
-import com.github.arnaudj.linkify.config.ConfigurationConstants
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants
+import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 import org.slf4j.LoggerFactory
 

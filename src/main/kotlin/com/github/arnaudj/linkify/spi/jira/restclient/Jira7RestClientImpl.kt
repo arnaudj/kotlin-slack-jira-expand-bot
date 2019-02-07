@@ -1,7 +1,7 @@
 package com.github.arnaudj.linkify.spi.jira.restclient
 
-import com.github.arnaudj.linkify.config.ConfigurationConstants
-import com.github.arnaudj.linkify.spi.jira.JiraEntity
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants
+import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser

@@ -1,15 +1,15 @@
 package com.github.arnaudj.linkify.slackbot
 
-import com.github.arnaudj.eventdriven.events.EventSourceData
-import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraBrowseIssueBaseUrl
-import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraReferenceBotReplyMode
-import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthPassword
-import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceAuthUser
-import com.github.arnaudj.linkify.config.ConfigurationConstants.jiraRestServiceBaseUrl
-import com.github.arnaudj.linkify.jiraengine.AppEventHandler
-import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyFormat
-import com.github.arnaudj.linkify.jiraengine.dtos.replies.JiraBotReplyMode
-import com.github.arnaudj.linkify.jiraengine.eventdriven.events.JiraResolvedEvent
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraBrowseIssueBaseUrl
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraReferenceBotReplyMode
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraRestServiceAuthPassword
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraRestServiceAuthUser
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraRestServiceBaseUrl
+import com.github.arnaudj.linkify.engines.jira.AppEventHandler
+import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyFormat
+import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyMode
+import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
 import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createSlackMessageFromEvent
 import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings
 import com.github.salomonbrys.kodein.Kodein
@@ -121,8 +121,6 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
     logger.info("Using bot configuration: ${configMap.toList().filter { it.first != jiraRestServiceAuthPassword }.toMap()}")
     if ((configMap[jiraRestServiceBaseUrl] as String).isEmpty() || (configMap[jiraRestServiceAuthUser] as String).isEmpty())
         logger.info("Jira resolution with API is disabled!")
-
-    val jiraReferencesReplyMode = configMap[jiraReferenceBotReplyMode] as JiraBotReplyMode
 
     val kodein = Kodein {
         import(getInjectionBindings(configMap))

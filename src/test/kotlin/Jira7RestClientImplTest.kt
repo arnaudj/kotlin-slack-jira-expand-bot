@@ -15,7 +15,6 @@ class Jira7RestClientImplTest : JiraWithInterceptorTestBase() {
                 "fieldsMap={summary=Some summary here, created=2017-03-17T15:37:10.000+0100, updated=2017-07-17T10:42:55.000+0200, status.name=Closed, " +
                 "priority.name=Minor, reporter.name=jdoe, assignee.name=noone})",
                 entity.toString())
-        Assert.assertEquals("http://localhost/browse/JIRA-1234", entity.getURL())
     }
 
     @Test
