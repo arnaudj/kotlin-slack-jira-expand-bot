@@ -8,7 +8,7 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraSeenEvent
 import java.util.regex.Pattern
 
 class JiraEventFactory : InboundMessageEventFactory {
-    val pattern: Pattern = Pattern.compile("[A-Z][A-Z0-9]{1,9}-\\d+")
+    val pattern: Pattern = Pattern.compile("(^|\\s|\\,|&|/)([A-Z][A-Z0-9]{1,9}(?<!\\bUTF|\\bCP|\\bISO)-\\d+)+")
 
     override fun createFrom(message: String, source: EventSourceData): List<Event> {
         return extractJiraIssueReferences(message).map { key ->
@@ -21,7 +21,7 @@ class JiraEventFactory : InboundMessageEventFactory {
         val matcher = pattern.matcher(message)
 
         while (matcher.find()) {
-            val jiraRef = matcher.group(1)
+            val jiraRef = matcher.group(2)
             ret.add(jiraRef.toUpperCase())
         }
 

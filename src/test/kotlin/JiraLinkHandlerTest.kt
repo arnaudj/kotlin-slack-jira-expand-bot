@@ -71,14 +71,14 @@ class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
     @Test
     fun `(with jira API) given 2 jira references bot provides 2 jira links`() {
         setupObjects(true)
-        receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234 and PROD-42 thanks?", "chan1", "pm1")
         assertMessagesEquals(buildMessages(expectedReplyWithJiraAPI_JIRA1234, expectdReplyWithJiraAPI_PROD42), replies)
     }
 
     @Test
     fun `(no jira API) given 2 jira references bot provides 2 jira links`() {
         setupObjects(false)
-        receiveChatMessage("Could you check JIRA-1234 and prod-42 thanks?", "chan1", "pm1")
+        receiveChatMessage("Could you check JIRA-1234 and PROD-42 thanks?", "chan1", "pm1")
         assertMessagesEquals(buildMessages(expectedReplyNoJiraAPI_JIRA1234, expectedReplyNoJiraAPI_PROD42), replies)
     }
 
