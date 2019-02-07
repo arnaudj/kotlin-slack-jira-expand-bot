@@ -16,8 +16,11 @@ import com.github.salomonbrys.kodein.Kodein
 import com.ullink.slack.simpleslackapi.SlackChannel
 import com.ullink.slack.simpleslackapi.SlackMessageHandle
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import com.ullink.slack.simpleslackapi.SlackSession
+import com.ullink.slack.simpleslackapi.events.SlackMessageUpdated
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
+import com.ullink.slack.simpleslackapi.listeners.SlackMessageUpdatedListener
 import com.ullink.slack.simpleslackapi.replies.SlackMessageReply
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.DefaultParser
@@ -139,6 +142,15 @@ private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, 
             return session.sendMessage(channel, preparedMessage)
         }
     })
+
+    session.addMessageUpdatedListener { event: SlackMessageUpdated, _: SlackSession? ->
+        with(event) {
+            // without persistence, we don't have threadTimestamp, nor user uid
+            // messageTimestamp: ts of original message
+            // editionTimestamp: ts at edit time
+            bot.handleChatMessage(newMessage, EventSourceData(channel.id, "unknownuid", messageTimestamp, messageTimestamp))
+        }
+    }
 
     session.addMessagePostedListener(SlackMessagePostedListener { event, _ ->
         //if (event.channelId.id != session.findChannelByName("thechannel").id) return // target per channelId
