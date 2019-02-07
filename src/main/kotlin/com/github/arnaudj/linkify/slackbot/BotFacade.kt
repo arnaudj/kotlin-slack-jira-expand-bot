@@ -31,7 +31,7 @@ class BotFacade(kodein: Kodein, workerPoolSize: Int, val appEventHandler: AppEve
         }
     }
     private val engine = JiraResolutionEngine(kodein, workerPoolSize, forwardingHandler, jiraPerChannelTimeThrottlingStrategy)
-    private val throttlingDelayMinutes = 2L
+    private val throttlingDelayMinutes = 60L
     private val jiraKeyToLastSeen: MutableMap<JiraKeyType, Long> = mutableMapOf()
 
     fun handleChatMessage(message: String, source: EventSourceData) = engine.handleMessage(message, source)
