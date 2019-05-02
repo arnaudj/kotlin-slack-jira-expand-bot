@@ -5,11 +5,11 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import okhttp3.Credentials
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.*
 import org.slf4j.LoggerFactory
+
+
+
 
 // For Jira 7.2.x - https://docs.atlassian.com/jira/REST/7.2.3/
 open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
@@ -17,8 +17,9 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
     val jiraAuthUser = configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String
     val jiraAuthPwd = configMap[ConfigurationConstants.jiraRestServiceAuthPassword] as String
 
-    open fun createClientBuilder(): okhttp3.OkHttpClient.Builder {
-        return OkHttpClient.Builder()
+
+    open fun createClientBuilder(): okhttp3.OkHttpClient.Builder{
+        return OkHttpClient.Builder();
     }
 
     override fun resolve(restBaseUrl: String, jiraIssueBrowseURL: String, jiraId: String): JiraEntity {
@@ -32,7 +33,9 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
                     .addHeader("Authorization", Credentials.basic(jiraAuthUser, jiraAuthPwd))
                     .get().build()
 
-            val client = createClientBuilder().build()
+            val client = createClientBuilder()
+                    .cookieJar(CookieStore())
+                    .build()
             logger.info("> Request: $request")
 
             client.newCall(request).execute().use { response ->
