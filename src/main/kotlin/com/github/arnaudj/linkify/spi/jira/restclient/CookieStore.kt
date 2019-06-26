@@ -29,7 +29,7 @@ open class CookieStore : CookieJar {
 
     @Synchronized
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
-        clearCache()
+        clearExpired()
         return cookieStore.toList().map { it.cookie }
     }
 
@@ -46,13 +46,18 @@ open class CookieStore : CookieJar {
 
     @Synchronized
     open fun hasValidSessionCookie(): Boolean {
-        clearCache()
+        clearExpired()
         return cookieStore.find { it.cookie.name() == sessionCookieName } != null
     }
 
     @Synchronized
-    private fun clearCache() {
+    private fun clearExpired() {
         cookieStore.removeIf { it.isExpired() }
+    }
+
+    @Synchronized
+    fun clearAll() {
+        cookieStore.clear()
     }
 
     override fun toString(): String {

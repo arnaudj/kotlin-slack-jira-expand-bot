@@ -49,6 +49,9 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
                 logger.info("< Reply code ${response.code()}")
 
                 if (!response.isSuccessful) {
+                    if (response.code() == 401) {
+                        cookieStore.clearAll()
+                    }
                     return JiraEntity(jiraId, jiraIssueBrowseURL, "Http call unsuccessful: ${response.code()}: ${response.message()}")
                 }
 
