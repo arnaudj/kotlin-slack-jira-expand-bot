@@ -7,4 +7,6 @@ object ConfigurationConstants {
     val jiraRestServiceAuthPassword: String = "jira.rest.service.auth.password"
 
     val jiraReferenceBotReplyMode: String = "jira.ref.bot.replymode"
+    val clientProxyHost: String = "client.proxy.host"
+    val clientProxyPort: String = "client.proxy.port"
 }

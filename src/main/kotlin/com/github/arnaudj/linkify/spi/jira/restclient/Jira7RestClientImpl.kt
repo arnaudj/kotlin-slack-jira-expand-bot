@@ -5,11 +5,15 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import okhttp3.Route
 import org.slf4j.LoggerFactory
+import java.net.Proxy
 
 // For Jira 7.2.x - https://docs.atlassian.com/jira/REST/7.2.3/
 open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
@@ -17,9 +21,31 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
     private val cookieStore = CookieStore()
     val jiraAuthUser = configMap[ConfigurationConstants.jiraRestServiceAuthUser] as String
     val jiraAuthPwd = configMap[ConfigurationConstants.jiraRestServiceAuthPassword] as String
+    val clientProxyHost = configMap[ConfigurationConstants.clientProxyHost] as String?
 
     open fun createClientBuilder(): okhttp3.OkHttpClient.Builder {
-        return OkHttpClient.Builder().cookieJar(cookieStore)
+        val builder = OkHttpClient.Builder()
+                .cookieJar(cookieStore)
+                .authenticator(object : Authenticator {
+                    override fun authenticate(route: Route, response: Response): Request? {
+                        // handle reply code 401 (somehow policy implemented in getRequest was not matched by server)
+                        if (response.request().header("Authorization") != null) {
+                            logger.info("* authenticate(): already tried Authorization header, bailing")
+                            return null
+                        }
+
+                        logger.info("* authenticate(): adding Authorization header for authentication challenge & clear cookie store")
+                        cookieStore.clearAll() // avoid propagating a stale JSESSIONID
+                        return response.request().newBuilder()
+                                .header("Authorization", Credentials.basic(jiraAuthUser, jiraAuthPwd))
+                                .build()
+                    }
+                })
+
+        if (clientProxyHost == null || clientProxyHost.isBlank()) {
+            builder.proxy(Proxy.NO_PROXY)
+        }
+        return builder
     }
 
     open fun getRequest(url: String): okhttp3.Request {
@@ -29,10 +55,13 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
                 .addHeader("User-Agent", "${this.javaClass.simpleName}/1")
                 .get()
 
+        // preemptive session cookie check
         if (!cookieStore.hasValidSessionCookie()) {
-            //logger.info("* getRequest: no valid session cookie, sending Authorization again - cookieStore: $cookieStore")
+            logger.info("* getRequest: no valid session cookie, sending Authorization again - cookieStore: $cookieStore")
             request.addHeader("Authorization", Credentials.basic(jiraAuthUser, jiraAuthPwd))
-        } //else { logger.info("* getRequest: has valid session cookie - cookieStore: $cookieStore")}
+        } else {
+            logger.info("* getRequest: has valid session cookie - cookieStore: $cookieStore")
+        }
 
         return request.build()
     }
@@ -43,10 +72,10 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
             val url = "$restBaseUrl/rest/api/latest/issue/$jiraId"
             val request: Request = getRequest(url)
             val client = createClientBuilder().build()
-            logger.info("> Request: $request")
+            logger.info("> Request: $request -- headers: ${request.headers()}")
 
             client.newCall(request).execute().use { response ->
-                logger.info("< Reply code ${response.code()}")
+                logger.info("< Reply code ${response.code()} -- headers: ${response.headers()}")
 
                 if (!response.isSuccessful) {
                     if (response.code() == 401) {

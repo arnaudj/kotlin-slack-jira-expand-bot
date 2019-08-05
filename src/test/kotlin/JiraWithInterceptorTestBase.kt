@@ -12,6 +12,7 @@ import com.github.salomonbrys.kodein.bind
 import com.github.salomonbrys.kodein.singleton
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 fun String.loadFromResources() = JiraWithInterceptorTestBase::class.java.getResource(this).readText()
 
@@ -19,9 +20,12 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
     lateinit var bot: BotFacade
     lateinit var kodein: Kodein
 
+    protected val mockReplyJira1234 = "JIRA-1234.mock.json".loadFromResources()
+    protected val mockReplyProd42 = "PROD-42.mock.json".loadFromResources()
+
     private val mockReplies = mapOf(
-            "/rest/api/latest/issue/JIRA-1234" to "JIRA-1234.mock.json".loadFromResources(),
-            "/rest/api/latest/issue/PROD-42" to "PROD-42.mock.json".loadFromResources()
+            "/rest/api/latest/issue/JIRA-1234" to mockReplyJira1234,
+            "/rest/api/latest/issue/PROD-42" to mockReplyProd42
     )
     val replies = mutableListOf<SlackPreparedMessage>()
 
@@ -58,14 +62,14 @@ private class StubbedJiraRestClient(
 
             assert(Credentials.basic(jiraAuthUser, jiraAuthPwd) == req.header("Authorization"), { "Invalid Credentials" })
 
-            val rawReply = mockReplies[req.url().encodedPath()]
+            val rawReply = mockReplies[req.url.encodedPath]
             val reply = rawReply ?: error("No stub found for this URL")
             Response.Builder()
                     .code(200)
                     .message("msg here")
                     .request(chain.request())
                     .protocol(okhttp3.Protocol.HTTP_1_1)
-                    .body(ResponseBody.create(MediaType.parse("application/json"), reply.toByteArray()))
+                    .body(ResponseBody.create("application/json".toMediaTypeOrNull(), reply.toByteArray()))
                     .addHeader("content-type", "application/json")
                     .build()
         }

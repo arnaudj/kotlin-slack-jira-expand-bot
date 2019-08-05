@@ -1,15 +1,17 @@
 package com.github.arnaudj.linkify.slackbot
 
-import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
+import com.github.arnaudj.linkify.engines.jira.AppEventHandler
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.clientProxyHost
+import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.clientProxyPort
 import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraBrowseIssueBaseUrl
 import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraReferenceBotReplyMode
 import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraRestServiceAuthPassword
 import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraRestServiceAuthUser
 import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraRestServiceBaseUrl
-import com.github.arnaudj.linkify.engines.jira.AppEventHandler
 import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyFormat
 import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyMode
 import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
+import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
 import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createSlackMessageFromEvent
 import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings
 import com.github.salomonbrys.kodein.Kodein
@@ -20,7 +22,6 @@ import com.ullink.slack.simpleslackapi.SlackSession
 import com.ullink.slack.simpleslackapi.events.SlackMessageUpdated
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
-import com.ullink.slack.simpleslackapi.listeners.SlackMessageUpdatedListener
 import com.ullink.slack.simpleslackapi.replies.SlackMessageReply
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.DefaultParser
@@ -50,7 +51,7 @@ fun main(args: Array<String>) {
         return
     }
 
-    val proxy = cmdLine.getOptionValue("p")
+    val proxy = extractProxy(cmdLine)
     val (jiraUser, jiraPassword) = extractJiraCredentials(cmdLine)
     val jiraBotRepliesFormat = extractEnumOption(cmdLine, "jfmt", { JiraBotReplyFormat.valueOf(it) }) as JiraBotReplyFormat
     val jiraBotRepliesMode = extractEnumOption(cmdLine, "jmode", { JiraBotReplyMode.valueOf(it) }) as JiraBotReplyMode
@@ -59,17 +60,29 @@ fun main(args: Array<String>) {
             jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs", false),
             jiraRestServiceAuthUser to jiraUser,
             jiraRestServiceAuthPassword to jiraPassword,
-            jiraReferenceBotReplyMode to jiraBotRepliesMode
+            jiraReferenceBotReplyMode to jiraBotRepliesMode,
+            clientProxyHost to proxy[0],
+            clientProxyPort to proxy[1]
     ))
 
-    runBot(token, proxy, configMap, jiraBotRepliesFormat)
+    runBot(token, configMap, jiraBotRepliesFormat)
+}
+
+private fun extractProxy(cmdLine: CommandLine): List<String> {
+    cmdLine.getOptionValue("p")?.let {
+        it.split(":", limit = 2).let { tokens ->
+            require(tokens.size == 2) { "malformed proxy" }
+            return tokens
+        }
+    }
+    return listOf("", "")
 }
 
 private fun extractJiraCredentials(cmdLine: CommandLine): List<String> {
     cmdLine.getOptionValue("u")?.let {
-        it.split(delimiters = ":", limit = 2).let {
-            if (it.size == 2)
-                return it
+        it.split(":", limit = 2).let { tokens ->
+            if (tokens.size == 2)
+                return tokens
         }
     }
     return listOf("", "")
@@ -109,15 +122,13 @@ private fun requireOption(cmdLine: CommandLine, option: String) {
     require(cmdLine.hasOption(option), { "Missing mandatory option: $option" })
 }
 
-private fun runBot(token: String?, proxy: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat) {
+private fun runBot(token: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat) {
     val session = SlackSessionFactory.getSlackSessionBuilder(token).apply {
         withAutoreconnectOnDisconnection(true)
 
-        proxy?.let {
-            logger.info("Using proxy: $it")
-            val elmt = it.split(":", limit = 2)
-            require(elmt.size == 2, { "malformed proxy" })
-            withProxy(Proxy.Type.HTTP, elmt[0], elmt[1].toInt())
+        if ((configMap[clientProxyHost] as String).isNotBlank() && (configMap[clientProxyPort] as String).isNotBlank()) {
+            logger.info("Using proxy: ${configMap[clientProxyHost]}:${configMap[clientProxyPort]}")
+            withProxy(Proxy.Type.HTTP, configMap[clientProxyHost] as String, (configMap[clientProxyPort] as String).toInt())
         }
     }.build()
 

@@ -16,7 +16,9 @@ open class JiraTestBase {
                 ConfigurationConstants.jiraRestServiceBaseUrl to jiraRestServiceBaseUrl,
                 ConfigurationConstants.jiraRestServiceAuthUser to if (jiraResolveWithAPI) jiraAuthUser else "",
                 ConfigurationConstants.jiraRestServiceAuthPassword to if (jiraResolveWithAPI) jiraAuthPwd else "",
-                ConfigurationConstants.jiraReferenceBotReplyMode to jiraJiraBotBotReplyMode
+                ConfigurationConstants.jiraReferenceBotReplyMode to jiraJiraBotBotReplyMode,
+                ConfigurationConstants.clientProxyHost to "",
+                ConfigurationConstants.clientProxyPort to -1
         ))
     }
 }
