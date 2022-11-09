@@ -51,7 +51,7 @@ class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
         Assert.assertTrue(replies.isEmpty())
     }
 
-    fun buildMessage(message: String): SlackPreparedMessage = SlackPreparedMessage.Builder().withMessage(message).build()
+    fun buildMessage(message: String): SlackPreparedMessage = SlackPreparedMessage.builder().message(message).build()
     fun buildMessages(vararg messages: String): List<SlackPreparedMessage> = messages.map { buildMessage(it) }.toList()
 
     @Test

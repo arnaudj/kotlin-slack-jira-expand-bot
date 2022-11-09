@@ -6,9 +6,9 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 
 class JiraResolvedEventMapperShortReply : JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolvedEvent, List<SlackPreparedMessage>> {
-    override fun createEntityBuilder(jiraHostURL: String, e: JiraResolvedEvent): SlackPreparedMessage.Builder {
-        return SlackPreparedMessage.Builder()
-                .withMessage(formatJiraIssueLinkAndSummary(jiraHostURL, e.entity))
+    override fun createEntityBuilder(jiraHostURL: String, e: JiraResolvedEvent): SlackPreparedMessage.SlackPreparedMessageBuilder {
+        return SlackPreparedMessage.builder()
+                .message(formatJiraIssueLinkAndSummary(jiraHostURL, e.entity))
     }
 
     private fun formatJiraIssueLinkAndSummary(jiraHostURL: String, e: JiraEntity) =

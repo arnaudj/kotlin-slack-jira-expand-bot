@@ -34,7 +34,10 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    compile 'com.github.Ullink:simple-slack-api:d3fe7de81118a72dcf9254b78e96252b5ae64cd1'
+    //compile 'com.github.Ullink:simple-slack-api:d3fe7de81118a72dcf9254b78e96252b5ae64cd1'
+    compile 'com.ullink.slack:simpleslackapi:1.4.0'
+    compileOnly 'org.projectlombok:lombok:1.18.10'
+    annotationProcessor 'org.projectlombok:lombok:1.18.10'
     compile 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
     compile 'com.googlecode.json-simple:json-simple:1.1'
     compile 'com.github.salomonbrys.kodein:kodein:4.1.0'
