@@ -5,6 +5,7 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
 import com.ullink.slack.simpleslackapi.SlackAttachment
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import com.ullink.slack.simpleslackapi.SlackPreparedMessage.SlackPreparedMessageBuilder
 import org.joda.time.format.DateTimeFormat
 
 class JiraResolvedEventMapperExtendedReply :
@@ -12,7 +13,7 @@ class JiraResolvedEventMapperExtendedReply :
 
     val priorityColorMap = mapOf("Minor" to "green", "Major" to "#439FE0", "Critical" to "warning", "Blocker" to "danger")
 
-    override fun createEntityBuilder(jiraHostURL: String, event: JiraResolvedEvent): SlackPreparedMessage.Builder {
+    override fun createEntityBuilder(jiraHostURL: String, event: JiraResolvedEvent): SlackPreparedMessageBuilder {
         val e = event.entity
         val attachment = SlackAttachment(
                 "${e.key}: ${getTitle(e)}",
@@ -33,9 +34,9 @@ class JiraResolvedEventMapperExtendedReply :
         attachment.color = priorityToColor(priorityName)
         attachment.titleLink = getIssueHref(jiraHostURL, e)
 
-        return SlackPreparedMessage.Builder()
+        return SlackPreparedMessage.builder()
                 //.withMessage() // common message to N attachments of this message
-                .withAttachments(listOf(attachment))
+                .attachments(listOf(attachment))
     }
 
     fun getFieldSafe(entity: JiraEntity, name: String) = entity.fieldsMap[name] as? String ?: ""

@@ -7,7 +7,7 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
 import com.ullink.slack.simpleslackapi.SlackPreparedMessage
 
 abstract class JiraResolvedEventMapperBase {
-    abstract fun createEntityBuilder(jiraHostURL: String, e: JiraResolvedEvent): SlackPreparedMessage.Builder
+    abstract fun createEntityBuilder(jiraHostURL: String, e: JiraResolvedEvent): SlackPreparedMessage.SlackPreparedMessageBuilder
 
     fun map(event: JiraResolvedEvent, configMap: Map<String, Any>): List<SlackPreparedMessage> {
         val jiraHostURL = configMap[ConfigurationConstants.jiraBrowseIssueBaseUrl] as String
@@ -21,7 +21,7 @@ abstract class JiraResolvedEventMapperBase {
             else -> throw IllegalArgumentException("Unsupported ReferenceReplyMode")
         }
         return listOf(createEntityBuilder(jiraHostURL, event)
-                .withThreadTimestamp(threadId)
+                .threadTimestamp(threadId)
                 .build())
     }
 
