@@ -4,12 +4,12 @@ import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants
 import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyMode
 import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
 
 abstract class JiraResolvedEventMapperBase {
-    abstract fun createEntityBuilder(jiraHostURL: String, e: JiraResolvedEvent): SlackPreparedMessage.SlackPreparedMessageBuilder
+    abstract fun createEntityBuilder(jiraHostURL: String, e: JiraResolvedEvent): ChatPostMessageRequest.ChatPostMessageRequestBuilder
 
-    fun map(event: JiraResolvedEvent, configMap: Map<String, Any>): List<SlackPreparedMessage> {
+    fun map(event: JiraResolvedEvent, configMap: Map<String, Any>): List<ChatPostMessageRequest> {
         val jiraHostURL = configMap[ConfigurationConstants.jiraBrowseIssueBaseUrl] as String
         val jiraReferenceBotReplyMode = configMap[ConfigurationConstants.jiraReferenceBotReplyMode] as JiraBotReplyMode?
 
@@ -21,15 +21,12 @@ abstract class JiraResolvedEventMapperBase {
             else -> throw IllegalArgumentException("Unsupported ReferenceReplyMode")
         }
         return listOf(createEntityBuilder(jiraHostURL, event)
-                .threadTimestamp(threadId)
+                .threadTs(threadId)
                 .build())
     }
 
     fun getTitle(e: JiraEntity, defaultValue: String = "No summary found"): String =
-            if (e.summary.isNotEmpty())
-                e.summary
-            else
-                e.fieldsMap["summary"] as? String ?: defaultValue
+        e.summary.ifEmpty { e.fieldsMap["summary"] as? String ?: defaultValue }
 
     protected fun getIssueHref(jiraHostURL: String, e: JiraEntity) = "$jiraHostURL/${e.key}"
 }

@@ -11,24 +11,23 @@ import com.github.arnaudj.linkify.engines.jira.ConfigurationConstants.jiraRestSe
 import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyFormat
 import com.github.arnaudj.linkify.engines.jira.entities.JiraBotReplyMode
 import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
-import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
 import com.github.arnaudj.linkify.slackbot.BotFacade.Companion.createSlackMessageFromEvent
 import com.github.arnaudj.linkify.slackbot.SlackbotModule.Companion.getInjectionBindings
+import com.github.arnaudj.linkify.slackbot.listener.MessageChangedListener
+import com.github.arnaudj.linkify.slackbot.listener.MessageListener
 import com.github.salomonbrys.kodein.Kodein
-import com.ullink.slack.simpleslackapi.SlackChannel
-import com.ullink.slack.simpleslackapi.SlackMessageHandle
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage
-import com.ullink.slack.simpleslackapi.SlackSession
-import com.ullink.slack.simpleslackapi.events.SlackMessageUpdated
-import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
-import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener
-import com.ullink.slack.simpleslackapi.replies.SlackMessageReply
+import com.slack.api.bolt.App
+import com.slack.api.bolt.AppConfig
+import com.slack.api.bolt.socket_mode.SocketModeApp
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
+import com.slack.api.methods.response.chat.ChatPostMessageResponse
+import com.slack.api.model.event.MessageChangedEvent
+import com.slack.api.model.event.MessageEvent
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
 import org.slf4j.LoggerFactory
-import java.net.Proxy
 
 val logger = LoggerFactory.getLogger("SlackBot")
 
@@ -55,7 +54,8 @@ fun main(args: Array<String>) {
     val (jiraUser, jiraPassword) = extractJiraCredentials(cmdLine)
     val jiraBotRepliesFormat = extractEnumOption(cmdLine, "jfmt", { JiraBotReplyFormat.valueOf(it) }) as JiraBotReplyFormat
     val jiraBotRepliesMode = extractEnumOption(cmdLine, "jmode", { JiraBotReplyMode.valueOf(it) }) as JiraBotReplyMode
-    val configMap = BotFacade.createConfigMap(mapOf(
+    val configMap = BotFacade.createConfigMap(
+        mapOf(
             jiraBrowseIssueBaseUrl to validateOptionUrl(cmdLine, "jia"),
             jiraRestServiceBaseUrl to validateOptionUrl(cmdLine, "jrs", false),
             jiraRestServiceAuthUser to jiraUser,
@@ -63,7 +63,8 @@ fun main(args: Array<String>) {
             jiraReferenceBotReplyMode to jiraBotRepliesMode,
             clientProxyHost to proxy[0],
             clientProxyPort to proxy[1]
-    ))
+        )
+    )
 
     runBot(token, configMap, jiraBotRepliesFormat)
 }
@@ -123,18 +124,20 @@ private fun requireOption(cmdLine: CommandLine, option: String) {
 }
 
 private fun runBot(token: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat) {
-    val session = SlackSessionFactory.getSlackSessionBuilder(token).apply {
-        withAutoreconnectOnDisconnection(true)
 
-        if ((configMap[clientProxyHost] as String).isNotBlank() && (configMap[clientProxyPort] as String).isNotBlank()) {
-            logger.info("Using proxy: ${configMap[clientProxyHost]}:${configMap[clientProxyPort]}")
-            withProxy(Proxy.Type.HTTP, configMap[clientProxyHost] as String, (configMap[clientProxyPort] as String).toInt())
-        }
-    }.build()
+    val conf = AppConfig()
+    conf.singleTeamBotToken = token
+    val app = App(conf)
+
+    if ((configMap[clientProxyHost] as String).isNotBlank() && (configMap[clientProxyPort] as String).isNotBlank()) {
+        logger.info("Using proxy: ${configMap[clientProxyHost]}:${configMap[clientProxyPort]}")
+        conf.slack.config.proxyUrl = "http://${configMap[clientProxyHost]}:${configMap[clientProxyPort]}"
+    }
 
     logger.info("Using bot configuration: ${configMap.toList().filter { it.first != jiraRestServiceAuthPassword }.toMap()}")
-    if ((configMap[jiraRestServiceBaseUrl] as String).isEmpty() || (configMap[jiraRestServiceAuthUser] as String).isEmpty())
+    if ((configMap[jiraRestServiceBaseUrl] as String).isEmpty() || (configMap[jiraRestServiceAuthUser] as String).isEmpty()) {
         logger.info("Jira resolution with API is disabled!")
+    }
 
     val kodein = Kodein {
         import(getInjectionBindings(configMap))
@@ -142,39 +145,23 @@ private fun runBot(token: String?, configMap: Map<String, Any>, jiraBotReplyForm
 
     val bot = BotFacade(kodein, 10, object : AppEventHandler {
         override fun onJiraResolvedEvent(event: JiraResolvedEvent, kodein: Kodein) {
-            val preparedMessage: List<SlackPreparedMessage> = createSlackMessageFromEvent(event, configMap, jiraBotReplyFormat)
-            val channel = session.findChannelById(event.source.sourceId)
+            val preparedMessage: List<ChatPostMessageRequest> = createSlackMessageFromEvent(event, configMap, jiraBotReplyFormat)
             preparedMessage.forEach {
-                sendSlackMessage(channel, it)
+                sendSlackMessage(event.source.sourceId, it)
             }
         }
 
-        fun sendSlackMessage(channel: SlackChannel, preparedMessage: SlackPreparedMessage): SlackMessageHandle<SlackMessageReply> {
-            return session.sendMessage(channel, preparedMessage)
+        fun sendSlackMessage(channel: String, chatPostMessageRequest: ChatPostMessageRequest): ChatPostMessageResponse {
+            chatPostMessageRequest.channel = channel
+            return app.client.chatPostMessage(chatPostMessageRequest)
         }
     })
 
-    session.addMessageUpdatedListener { event: SlackMessageUpdated, _: SlackSession? ->
-        with(event) {
-            // without persistence, we don't have threadTimestamp, nor user uid
-            // messageTimestamp: ts of original message
-            // editionTimestamp: ts at edit time
-            bot.handleChatMessage(newMessage, EventSourceData(channel.id, "unknownuid", messageTimestamp, messageTimestamp))
-        }
-    }
+    app.event(MessageEvent::class.java, MessageListener(bot))
+    app.event(MessageChangedEvent::class.java, MessageChangedListener(bot))
 
-    session.addMessagePostedListener(SlackMessagePostedListener { event, _ ->
-        //if (event.channelId.id != session.findChannelByName("thechannel").id) return // target per channelId
-        //if (event.sender.id != session.findUserByUserName("gueststar").id) return // target per user
-        if (session.sessionPersona().id == event.sender.id || event?.user?.isBot == true)
-            return@SlackMessagePostedListener // filter own and 3rd party bot messages
-
-        with(event) {
-            bot.handleChatMessage(messageContent, EventSourceData(channel.id, user.id, timeStamp, threadTimestamp))
-        }
-    })
-
-    session.connect()
+    SocketModeApp(app).startAsync()
     logger.info("Session connected")
+    Thread.sleep(Long.MAX_VALUE)
 }
 

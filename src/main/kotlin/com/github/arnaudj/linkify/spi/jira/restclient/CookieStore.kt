@@ -14,7 +14,7 @@ class CookieEx(val cookie: Cookie, private val expiresAt: Long?) {
         return if (expiresAt != null)
             expiresAt <= now
         else
-            cookie.expiresAt() <= now
+            cookie.expiresAt <= now
     }
 
     override fun toString(): String {
@@ -36,8 +36,8 @@ open class CookieStore : CookieJar {
     @Synchronized
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         cookies.forEach { cookie ->
-            var expires = cookie.expiresAt()
-            if (cookie.name() == sessionCookieName) { // no expiresAt provided, add it
+            var expires = cookie.expiresAt
+            if (cookie.name == sessionCookieName) { // no expiresAt provided, add it
                 expires = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(sessionCookieExpiryHours)
             }
             cookieStore.add(CookieEx(cookie, expires))
@@ -47,7 +47,7 @@ open class CookieStore : CookieJar {
     @Synchronized
     open fun hasValidSessionCookie(): Boolean {
         clearExpired()
-        return cookieStore.find { it.cookie.name() == sessionCookieName } != null
+        return cookieStore.find { it.cookie.name == sessionCookieName } != null
     }
 
     @Synchronized

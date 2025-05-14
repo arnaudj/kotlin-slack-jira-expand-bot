@@ -8,6 +8,7 @@ import com.google.gson.JsonParser
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -27,16 +28,16 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
         val builder = OkHttpClient.Builder()
                 .cookieJar(cookieStore)
                 .authenticator(object : Authenticator {
-                    override fun authenticate(route: Route, response: Response): Request? {
+                    override fun authenticate(route: Route?, response: Response): Request? {
                         // handle reply code 401 (somehow policy implemented in getRequest was not matched by server)
-                        if (response.request().header("Authorization") != null) {
+                        if (response.request.header("Authorization") != null) {
                             logger.info("* authenticate(): already tried Authorization header, bailing")
                             return null
                         }
 
                         logger.info("* authenticate(): adding Authorization header for authentication challenge & clear cookie store")
                         cookieStore.clearAll() // avoid propagating a stale JSESSIONID
-                        return response.request().newBuilder()
+                        return response.request.newBuilder()
                                 .header("Authorization", Credentials.basic(jiraAuthUser, jiraAuthPwd))
                                 .build()
                     }
@@ -51,7 +52,7 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
     open fun getRequest(url: String): okhttp3.Request {
         val request = Request.Builder()
                 .url(url)
-                .addHeader("Content-Type", MediaType.parse("application/json; charset=utf-8").toString())
+                .addHeader("Content-Type", "application/json; charset=utf-8".toMediaTypeOrNull().toString())
                 .addHeader("User-Agent", "${this.javaClass.simpleName}/1")
                 .get()
 
@@ -72,19 +73,19 @@ open class Jira7RestClientImpl(configMap: Map<String, Any>) : JiraRestClient {
             val url = "$restBaseUrl/rest/api/latest/issue/$jiraId"
             val request: Request = getRequest(url)
             val client = createClientBuilder().build()
-            logger.info("> Request: $request -- headers: ${request.headers()}")
+            logger.info("> Request: $request -- headers: ${request.headers}")
 
             client.newCall(request).execute().use { response ->
-                logger.info("< Reply code ${response.code()} -- headers: ${response.headers()}")
+                logger.info("< Reply code ${response.code} -- headers: ${response.headers}")
 
                 if (!response.isSuccessful) {
-                    if (response.code() == 401) {
+                    if (response.code == 401) {
                         cookieStore.clearAll()
                     }
-                    return JiraEntity(jiraId, jiraIssueBrowseURL, "Http call unsuccessful: ${response.code()}: ${response.message()}")
+                    return JiraEntity(jiraId, jiraIssueBrowseURL, "Http call unsuccessful: ${response.code}: ${response.message}")
                 }
 
-                val payload = response.body()?.string() ?: ""
+                val payload = response.body?.string() ?: ""
                 logger.debug("< Reply: ###$payload###")
 
                 return if (payload.isEmpty())

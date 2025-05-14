@@ -20,13 +20,15 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    implementation 'com.ullink.slack:simpleslackapi:1.4.0'
+    implementation 'com.slack.api:bolt:1.45.3'
+    implementation 'com.slack.api:bolt-socket-mode:1.45.3'
+    implementation 'javax.websocket:javax.websocket-api:1.1'
     compileOnly 'org.projectlombok:lombok:1.18.10'
-    implementation 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
+    implementation 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.20'
     implementation 'com.googlecode.json-simple:json-simple:1.1'
     implementation 'com.github.salomonbrys.kodein:kodein:4.1.0'
-    implementation 'org.slf4j:slf4j-simple:1.7.7'
-    implementation 'org.slf4j:slf4j-api:1.7.7'
+    implementation 'org.slf4j:slf4j-simple:1.7.36'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'commons-cli:commons-cli:1.4'
     implementation 'com.google.guava:guava:23.0'
     // Jira client

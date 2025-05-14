@@ -12,7 +12,7 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraSeenEvent
 import com.github.arnaudj.linkify.slackbot.eventdriven.eventmappers.JiraResolvedEventMapperExtendedReply
 import com.github.arnaudj.linkify.slackbot.eventdriven.eventmappers.JiraResolvedEventMapperShortReply
 import com.github.salomonbrys.kodein.Kodein
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
 import java.util.concurrent.TimeUnit
 
 class BotFacade(kodein: Kodein, workerPoolSize: Int, val appEventHandler: AppEventHandler) {
@@ -38,7 +38,7 @@ class BotFacade(kodein: Kodein, workerPoolSize: Int, val appEventHandler: AppEve
 
     companion object {
         @JvmStatic
-        fun createSlackMessageFromEvent(event: Event, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat): List<SlackPreparedMessage> {
+        fun createSlackMessageFromEvent(event: Event, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat): List<ChatPostMessageRequest> {
             return when (event) {
                 is JiraResolvedEvent ->
                     when (jiraBotReplyFormat) {
