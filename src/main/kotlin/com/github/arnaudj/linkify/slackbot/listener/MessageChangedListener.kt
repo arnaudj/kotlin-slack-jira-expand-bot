@@ -10,10 +10,6 @@ import com.slack.api.model.event.MessageChangedEvent
 
 class MessageChangedListener(private val bot: BotFacade) : BoltEventHandler<MessageChangedEvent> {
 
-    companion object {
-        private const val ACK_EMOJI = "white_check_mark"
-    }
-
     override fun apply(payload: EventsApiPayload<MessageChangedEvent>, context: EventContext): Response {
         val event = payload.event
         val text = event.message.text

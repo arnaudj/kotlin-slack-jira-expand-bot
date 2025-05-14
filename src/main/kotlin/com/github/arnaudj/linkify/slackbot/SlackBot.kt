@@ -35,6 +35,7 @@ fun main(args: Array<String>) {
 
     val options = Options()
     options.addOption("t", true, "set bot auth token")
+    options.addOption("a", true, "set app auth token")
     options.addOption("p", true, "http proxy with format host:port")
     options.addOption("jia", true, "jira http base address for issues browsing (ex: http://jira.nodomain/browse)")
     options.addOption("jrs", true, "jira http base address for rest service (ex: http://jira.nodomain, without '/rest/api/latest/')")
@@ -44,8 +45,9 @@ fun main(args: Array<String>) {
     options.addOption("h", false, "help")
 
     val cmdLine = DefaultParser().parse(options, args)
-    val token = cmdLine.getOptionValue("t")
-    if (cmdLine.hasOption("h") || (token?.length ?: -1) < 5) {
+    val botToken = cmdLine.getOptionValue("t")
+    val appToken = cmdLine.getOptionValue("a")
+    if (cmdLine.hasOption("h") || (botToken?.length ?: -1) < 5) {
         HelpFormatter().printHelp("bot", options)
         return
     }
@@ -66,7 +68,7 @@ fun main(args: Array<String>) {
         )
     )
 
-    runBot(token, configMap, jiraBotRepliesFormat)
+    runBot(botToken, appToken, configMap, jiraBotRepliesFormat)
 }
 
 private fun extractProxy(cmdLine: CommandLine): List<String> {
@@ -123,10 +125,10 @@ private fun requireOption(cmdLine: CommandLine, option: String) {
     require(cmdLine.hasOption(option), { "Missing mandatory option: $option" })
 }
 
-private fun runBot(token: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat) {
+private fun runBot(botToken: String?, appToken: String?, configMap: Map<String, Any>, jiraBotReplyFormat: JiraBotReplyFormat) {
 
     val conf = AppConfig()
-    conf.singleTeamBotToken = token
+    conf.singleTeamBotToken = botToken
     val app = App(conf)
 
     if ((configMap[clientProxyHost] as String).isNotBlank() && (configMap[clientProxyPort] as String).isNotBlank()) {
@@ -160,7 +162,7 @@ private fun runBot(token: String?, configMap: Map<String, Any>, jiraBotReplyForm
     app.event(MessageEvent::class.java, MessageListener(bot))
     app.event(MessageChangedEvent::class.java, MessageChangedListener(bot))
 
-    SocketModeApp(app).startAsync()
+    SocketModeApp(appToken, app).startAsync()
     logger.info("Session connected")
     Thread.sleep(Long.MAX_VALUE)
 }
