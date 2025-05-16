@@ -1,4 +1,4 @@
-image:https://travis-ci.org/arnaudj/kotlin-slack-jira-expand-bot.svg?branch=master["Build Status", link="https://travis-ci.org/arnaudj/kotlin-slack-jira-expand-bot"]
+image:https://github.com/arnaudj/kotlin-slack-jira-expand-bot/actions/workflows/gradle.yml/badge.svg["Build Status", link="https://github.com/arnaudj/kotlin-slack-jira-expand-bot/actions/workflows/gradle.yml"]
 
 A Slack bot that automatically provides a link to JIRA issues written in channels.
 
