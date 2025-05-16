@@ -25,4 +25,4 @@ For more info, run bot with -h.
 == Misc
 Slack access thanks to the https://api.slack.com/bolt[Bolt Slack API].
 
-Check the https://github.com/JetBrains/kotlin-web-site/blob/yole/styleguide/pages/docs/reference/coding-conventions.md[Kotlin coding conventions]
+Check the https://kotlinlang.org/docs/coding-conventions.html[Kotlin coding conventions]

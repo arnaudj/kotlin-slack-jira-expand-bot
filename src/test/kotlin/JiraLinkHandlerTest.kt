@@ -1,5 +1,5 @@
 import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
 import org.junit.Assert
 import org.junit.Test
 
@@ -51,8 +51,8 @@ class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
         Assert.assertTrue(replies.isEmpty())
     }
 
-    fun buildMessage(message: String): SlackPreparedMessage = SlackPreparedMessage.builder().message(message).build()
-    fun buildMessages(vararg messages: String): List<SlackPreparedMessage> = messages.map { buildMessage(it) }.toList()
+    fun buildMessage(message: String): ChatPostMessageRequest = ChatPostMessageRequest.builder().text(message).build()
+    fun buildMessages(vararg messages: String): List<ChatPostMessageRequest> = messages.map { buildMessage(it) }.toList()
 
     @Test
     fun `(with jira API) given 1 jira reference bot provides 1 jira link`() {
@@ -124,7 +124,7 @@ class JiraLinkHandlerTest : JiraWithInterceptorTestBase() {
         receiveChatMessage("Could you check JIRA-1234?", "chan1", "pm2")
     }
 
-    fun assertMessagesEquals(expected: List<SlackPreparedMessage>, actual: List<SlackPreparedMessage>) {
+    fun assertMessagesEquals(expected: List<ChatPostMessageRequest>, actual: List<ChatPostMessageRequest>) {
         val expected0 = expected.map { it.toString() }
         val actual0 = actual.map { it.toString() }
         val message = "Expected:\n$expected0\n\nActual:\n$actual0"
