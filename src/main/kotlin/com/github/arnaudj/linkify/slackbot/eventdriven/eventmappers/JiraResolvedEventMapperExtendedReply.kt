@@ -3,38 +3,44 @@ package com.github.arnaudj.linkify.slackbot.eventdriven.eventmappers
 import com.github.arnaudj.linkify.engines.ReplyEventMapper
 import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
-import com.ullink.slack.simpleslackapi.SlackAttachment
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage.SlackPreparedMessageBuilder
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
+import com.slack.api.model.Attachment
+import com.slack.api.model.Field
 import org.joda.time.format.DateTimeFormat
 
 class JiraResolvedEventMapperExtendedReply :
-        JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolvedEvent, List<SlackPreparedMessage>> {
+        JiraResolvedEventMapperBase(), ReplyEventMapper<JiraResolvedEvent, List<ChatPostMessageRequest>> {
 
     val priorityColorMap = mapOf("Minor" to "green", "Major" to "#439FE0", "Critical" to "warning", "Blocker" to "danger")
 
-    override fun createEntityBuilder(jiraHostURL: String, event: JiraResolvedEvent): SlackPreparedMessageBuilder {
+    override fun createEntityBuilder(jiraHostURL: String, event: JiraResolvedEvent): ChatPostMessageRequest.ChatPostMessageRequestBuilder {
         val e = event.entity
-        val attachment = SlackAttachment(
-                "${e.key}: ${getTitle(e)}",
-                getTitle(e),
-                "", // text: Optional text that appears within the attachment
-                "" // pretext: Optional text that appears above the attachment block
+        val attachment = Attachment()
+        attachment.title = "${e.key}: ${getTitle(e)}"
+        attachment.fallback = getTitle(e)
+
+        val fieldDefinitions = listOf(
+            "Priority" to "priority.name",
+            "Status" to "status.name",
+            "Reporter" to "reporter.name",
+            "Assignee" to "assignee.name"
         )
-        val priorityName = getFieldSafe(e, "priority.name")
-        attachment.addField("Priority", priorityName, true)
-        attachment.addField("Status", getFieldSafe(e, "status.name"), true)
-        attachment.addField("Reporter", getFieldSafe(e, "reporter.name"), true)
-        attachment.addField("Assignee", getFieldSafe(e, "assignee.name"), true)
+        attachment.fields = fieldDefinitions.map { (title, path) ->
+            Field().apply {
+                this.title = title
+                this.value = getFieldSafe(e, path)
+                this.isValueShortEnough = true
+            }
+        }
 
         val updated = getFieldSafe(e, "updated")
         val footerPrefix = "Updated: "
         attachment.footer = if (updated.isNotEmpty()) formatDate(updated, footerPrefix) else footerPrefix
 
-        attachment.color = priorityToColor(priorityName)
+        attachment.color = priorityToColor(getFieldSafe(e, "priority.name"))
         attachment.titleLink = getIssueHref(jiraHostURL, e)
 
-        return SlackPreparedMessage.builder()
+        return ChatPostMessageRequest.builder()
                 //.withMessage() // common message to N attachments of this message
                 .attachments(listOf(attachment))
     }

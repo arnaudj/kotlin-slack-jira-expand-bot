@@ -22,6 +22,6 @@ Then run the bot:
 For more info, run bot with -h.
 
 == Misc
-Slack access thanks to the https://github.com/Ullink/simple-slack-api[Simple Slack API].
+Slack access thanks to the https://api.slack.com/bolt[Bolt Slack API].
 
 Check the https://github.com/JetBrains/kotlin-web-site/blob/yole/styleguide/pages/docs/reference/coding-conventions.md[Kotlin coding conventions]
