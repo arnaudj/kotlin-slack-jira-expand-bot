@@ -5,7 +5,7 @@ import com.github.arnaudj.linkify.engines.jira.entities.JiraEntity
 import com.github.arnaudj.linkify.engines.jira.entities.JiraResolvedEvent
 import com.github.arnaudj.linkify.eventdriven.events.EventSourceData
 import com.github.arnaudj.linkify.slackbot.BotFacade
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -52,10 +52,10 @@ class JiraEventMapperTest extends Specification {
 
         when:
         def event = new JiraResolvedEvent(new EventSourceData("sid1", "uuid1", "ts1", sourceMessageThreadTimestamp), jiraEntity1)
-        def slackPreparedMessage = subTestExtendedReplyFormat(event)
+        def chatPostMessageRequest = subTestExtendedReplyFormat(event)
 
         then:
-        expectedReplythreadTimestamp == slackPreparedMessage.threadTimestamp
+        expectedReplythreadTimestamp == chatPostMessageRequest.threadTs
 
         where:
         replyMode               | sourceMessageThreadTimestamp | expectedReplythreadTimestamp
@@ -66,7 +66,7 @@ class JiraEventMapperTest extends Specification {
         JiraBotReplyMode.THREAD | null                         | "ts1" // start thread
     }
 
-    private SlackPreparedMessage subTestExtendedReplyFormat(JiraResolvedEvent event) {
+    private ChatPostMessageRequest subTestExtendedReplyFormat(JiraResolvedEvent event) {
         def preparedMessages = BotFacade.createSlackMessageFromEvent(event, configMap, jiraBotReplyFormatExtended)
         assert 1 == preparedMessages.size()
         def pm = preparedMessages[0]
@@ -74,8 +74,8 @@ class JiraEventMapperTest extends Specification {
         with(pm.attachments[0]) {
             assert "JIRA-1234: A subtask with some summary here" == title
             assert "A subtask with some summary here" == fallback
-            assert "" == text
-            assert "" == pretext
+            assert null == text
+            assert null == pretext
             assert "<!date^1500280975^Updated: {date_num} {time_secs}|2017-07-17T10:42:55.000+0200>" == footer
             assert "[Priority=Minor, Status=Closed, Reporter=jdoe, Assignee=noone]" == expandFields(fields)
         }
@@ -89,10 +89,10 @@ class JiraEventMapperTest extends Specification {
 
         when:
         def event = new JiraResolvedEvent(new EventSourceData("sid1", "uuid1", "ts1", sourceMessageThreadTimestamp), jiraEntity1)
-        def slackPreparedMessage = subTestShortReplyFormat(event)
+        def chatPostMessageRequest = subTestShortReplyFormat(event)
 
         then:
-        expectedReplythreadTimestamp == slackPreparedMessage.threadTimestamp
+        expectedReplythreadTimestamp == chatPostMessageRequest.threadTs
 
         where:
         replyMode               | sourceMessageThreadTimestamp | expectedReplythreadTimestamp
@@ -103,12 +103,12 @@ class JiraEventMapperTest extends Specification {
         JiraBotReplyMode.THREAD | null                         | "ts1" // start thread
     }
 
-    private SlackPreparedMessage subTestShortReplyFormat(JiraResolvedEvent event) {
+    private ChatPostMessageRequest subTestShortReplyFormat(JiraResolvedEvent event) {
         def preparedMessages = BotFacade.createSlackMessageFromEvent(event, configMap, jiraBotReplyFormatShort)
         assert 1 == preparedMessages.size()
         def pm = preparedMessages[0]
-        assert "<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`" == pm.message
-        assert 0 == pm.attachments.size()
+        assert "<$jiraBrowseIssueBaseUrl/JIRA-1234|JIRA-1234> `A subtask with some summary here`" == pm.text
+        assert null == pm.attachments
         return pm
     }
 

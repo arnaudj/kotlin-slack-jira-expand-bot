@@ -10,7 +10,7 @@ import com.github.arnaudj.linkify.spi.jira.restclient.JiraRestClient
 import com.github.salomonbrys.kodein.Kodein
 import com.github.salomonbrys.kodein.bind
 import com.github.salomonbrys.kodein.singleton
-import com.ullink.slack.simpleslackapi.SlackPreparedMessage
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
@@ -27,7 +27,7 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
             "/rest/api/latest/issue/JIRA-1234" to mockReplyJira1234,
             "/rest/api/latest/issue/PROD-42" to mockReplyProd42
     )
-    val replies = mutableListOf<SlackPreparedMessage>()
+    val replies = mutableListOf<ChatPostMessageRequest>()
 
     fun setupObjects(jiraResolveWithAPI: Boolean, jiraBotReplyMode: JiraBotReplyMode = JiraBotReplyMode.INLINE) {
         setupConfigMap(jiraResolveWithAPI, jiraBotReplyMode)
@@ -39,7 +39,7 @@ open class JiraWithInterceptorTestBase : JiraTestBase() {
 
         bot = BotFacade(kodein, -1, object : AppEventHandler {
             override fun onJiraResolvedEvent(event: JiraResolvedEvent, kodein: Kodein) {
-                val preparedMessage: List<SlackPreparedMessage> = createSlackMessageFromEvent(event, configMap, JiraBotReplyFormat.SHORT)
+                val preparedMessage: List<ChatPostMessageRequest> = createSlackMessageFromEvent(event, configMap, JiraBotReplyFormat.SHORT)
                 preparedMessage.forEach {
                     replies.add(it)
                 }

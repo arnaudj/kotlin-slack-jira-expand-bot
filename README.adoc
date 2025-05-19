@@ -1,4 +1,4 @@
-image:https://travis-ci.org/arnaudj/kotlin-slack-jira-expand-bot.svg?branch=master["Build Status", link="https://travis-ci.org/arnaudj/kotlin-slack-jira-expand-bot"]
+image:https://github.com/arnaudj/kotlin-slack-jira-expand-bot/actions/workflows/gradle.yml/badge.svg["Build Status", link="https://github.com/arnaudj/kotlin-slack-jira-expand-bot/actions/workflows/gradle.yml"]
 
 A Slack bot that automatically provides a link to JIRA issues written in channels.
 
@@ -7,7 +7,7 @@ image:https://raw.github.com/arnaudj/kotlin-slack-jira-expand-bot/master/res/sta
 
 == How to use
 First, create a new bot user on your Slack team, please read https://api.slack.com/bot-users[Slack bot users].
-You will obtain a bot access token that is needed below.
+You will obtain an app authentication token and a bot authentication token that are needed below.
 
 Then run the bot:
 
@@ -16,6 +16,7 @@ Then run the bot:
 * Option -jia will be used as base address when expanding links
 * Option -jrs will be used as Jira REST API endpoint
 * Option -jfmt and -jmode control display
+* Option -a specifies the app authentication token (cf first step)
 * Option -t specifies the bot authentication token (cf first step)
 * Option -p allow to specify an http(s) proxy, if needed
 
@@ -24,4 +25,4 @@ For more info, run bot with -h.
 == Misc
 Slack access thanks to the https://api.slack.com/bolt[Bolt Slack API].
 
-Check the https://github.com/JetBrains/kotlin-web-site/blob/yole/styleguide/pages/docs/reference/coding-conventions.md[Kotlin coding conventions]
+Check the https://kotlinlang.org/docs/coding-conventions.html[Kotlin coding conventions]
