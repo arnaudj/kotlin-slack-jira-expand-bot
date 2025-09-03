@@ -36,10 +36,13 @@ open class CookieStore : CookieJar {
     @Synchronized
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         cookies.forEach { cookie ->
-            var expires = cookie.expiresAt
-            if (cookie.name == sessionCookieName) { // no expiresAt provided, add it
-                expires = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(sessionCookieExpiryHours)
+            if (cookie.name != sessionCookieName) {
+                // only store session cookie. Server will regularly issue a new "atlassian.xsrf.token"
+                // cookie that never expires (31/12/9999).
+                return@forEach
             }
+            // assume no expiresAt provided for session cookie, add it
+            val expires = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(sessionCookieExpiryHours)
             cookieStore.add(CookieEx(cookie, expires))
         }
     }
